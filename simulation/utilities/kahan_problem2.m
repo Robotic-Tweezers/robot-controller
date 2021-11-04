@@ -12,16 +12,16 @@ if round(s_unit' * u_unit, 2) ~= round(s_unit' * v_unit, 2)
     return
 end
 
-
-theta = 2 * atan(norm(skew(s_unit) * (u_unit - v_unit)) / ...
-                 norm(skew(s_unit) * (u_unit + v_unit)));
+% temporary calculations
+q = skew3(s_unit) * (u_unit - v_unit);
+r = skew3(s_unit) * (u_unit + v_unit);
 
 % Sign of the below equation determines the sign of theta
-if (v_unit' * (skew(s_unit) * (u_unit - v_unit)) < 0) 
-    theta = -theta;
+if (v_unit' * (skew3(s_unit) * (u_unit - v_unit)) < 0) 
+    theta = round(-2 * atan(norm(q) / norm(r)), 6);
+else
+    theta = round(2 * atan(norm(q) / norm(r)), 6);
 end
-
-theta = round(theta, 6);
 
 end
 

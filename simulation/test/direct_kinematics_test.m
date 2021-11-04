@@ -38,4 +38,10 @@ expected_origin = [0, 0, 25]';
 assert(isequal(frame, expected_frame));
 assert(isequal(origin, expected_origin));
 
+clear theta;
+clear expected_frame;
+clear expected_origin;
+clear frame;
+clear origin;
+
 fprintf("PASS\n");

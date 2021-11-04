@@ -42,10 +42,21 @@ end
 
 fprintf("Done.\n");
 
+fprintf("Running unit tests...\n");
+
+for i = 1:size(project.Files, 2)
+    if extractBetween(project.Files(i).Path, project.RootFolder + '\', '\') == "test"
+        script = extractAfter(project.Files(i).Path, project.RootFolder + "\test\");
+        disp(script)
+        run(script);
+    end
+end
+
 fprintf("Setup complete, cleaning workspace.\n");
 
 % Cleanup
 clear run_config_command;
+clear script;
 clear status;
 clear commandOut;
 clear params_str;

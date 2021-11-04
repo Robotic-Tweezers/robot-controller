@@ -17,4 +17,9 @@ for i = 1:5
     assert(isequal(result, expected(i)));
 end
 
+clear s;
+clear t; 
+clear expected;
+clear result;
+
 fprintf("PASS\n");
