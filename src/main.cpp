@@ -40,7 +40,7 @@ static void pollSerial(void* arg)
 
 void setup()
 {
-    portBASE_TYPE status = pdTRUE;
+    portBASE_TYPE status = pdPASS;
     duty_cycle = 2;
 
     Serial.begin(9600);
