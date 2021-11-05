@@ -13,6 +13,15 @@ To run the robots firmware, you will need to install the following software in o
 - [FreeRTOS-Teensy4](https://platformio.org/lib/show/6737/FreeRTOS-Teensy4/installation)
     - Should be able to install this through PlatformIO library manager
 
-## Kinematic Analysis
+## Analysis
+
+The manipulator control system was developed using transformations derived from the Denavit-Hartenberg (DH) convention. Using this system, and the Paden–Kahan Subproblems, we were able to perform the inverse and direct kinematic analysis, as well as the inverse and direct dynamics analysis.
 
 ![Spherical Wrist](assets/spherical_wrist_diagram.jpg)
+
+### Direct Kinematics 
+
+To related the end-effector coordinate frame and origin to the three joint variables, we used the DH parameters, $\theta$, $d$, $a$, $\alpha$ to model each joints frame and origin as a function of the previous joint, and finally for the end-effector as a function of the three joints.
+
+$$^{i-1}C_{i} = e^{\theta k\times}e^{\alpha i\times}$$
+$$x_{1,2} = \frac{-b \pm \sqrt{b^2-4ac}}{2b}.$$

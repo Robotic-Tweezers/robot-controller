@@ -3,6 +3,7 @@
 
 #include <config.hpp>
 #include <motor.hpp>
+#include <ArduinoEigenDense.h>
 
 motor::Motor sg90(1, 11);
 volatile int duty_cycle;
