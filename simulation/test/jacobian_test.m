@@ -1,5 +1,14 @@
 % TODO: test
-J = jacobian([0, 0, 0], parameters);
-disp(J);
+jacobian = jacobian([0, 0, 0], parameters);
+expected = [
+    [0, -15, 0];
+    [0, 0, 0];
+    [0, 0, 0];
+    [0, 0, 0];
+    [0, -1, 0];
+    [1, 0, 1];
+];
+assert(isequal(jacobian, expected));
 
-clear J;
+clear jacobian;
+clear expected;

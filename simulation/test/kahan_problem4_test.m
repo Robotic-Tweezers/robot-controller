@@ -33,4 +33,9 @@ c = 7;
 theta = kahan_problem4(a, b, c);
 assert(theta == round(pi / 3, 6));
 
+clear a;
+clear b;
+clear c;
+clear theta;
+
 fprintf("PASS\n");

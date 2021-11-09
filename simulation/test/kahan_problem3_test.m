@@ -43,4 +43,11 @@ v = [1, 0, 1]';
 [theta, phi] = kahan_problem3(s_unit, t_unit, u, v);
 assert(isequal(round(theta, 4), [0; 2.0944]) && isequal(round(phi, 4), [0; 1.5708]))
 
+clear s_unit;
+clear t_unit;
+clear u;
+clear v;
+clear theta;
+clear phi;
+
 fprintf("PASS\n");

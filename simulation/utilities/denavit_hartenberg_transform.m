@@ -12,24 +12,24 @@ zero3 = zeros(3, 1);
 
 % Calulate using the product of the angular and traslation matricies
 % corresponding to each parameter
-angle = [
-    [expm(theta * skew3(k_unit)), zero3];
-    [zero3',                         1]
-];
-offset = [
+z_translation = [
     [eye(3), d * k_unit];
     [zero3',          1]
 ];
-length = [
+z_rotation = [
+    [expm(theta * skew3(k_unit)), zero3];
+    [zero3',                         1]
+];
+i_translation = [
     [eye(3), a * i_unit];
     [zero3',          1]
 ];
-twist = [
+i_rotation = [
     [expm(alpha * skew3(i_unit)), zero3];
     [zero3',                         1]
 ];
 
-transform = angle * offset * length * twist;
+transform = z_translation * z_rotation * i_translation * i_rotation;
 
 end
 
