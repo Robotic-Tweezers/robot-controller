@@ -54,3 +54,7 @@ With $\theta_1$ and $\theta_3$ known, we can use them in the original direct kin
 ### Jacobian Matrix <a name="Jacobian-Matrix"></a>
 
 The Jacobian matrix is also being used to relate the joint velocities, $\dot{\theta}_1, \dot{\theta}_2, \dot{\theta}_3$, to the end effector velocity $[\dot{\delta}$ $\omega]'$, the general expression for three revolute joints in series is shown in (6).
+
+<p align="center">
+  <img src="assets/jacobian.jpg" alt="Jacobian" width="580"/>
+</p>

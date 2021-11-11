@@ -55,12 +55,4 @@ end
 fprintf("Setup complete, cleaning workspace.\n");
 
 % Cleanup
-clear run_config_command;
-clear script;
-clear status;
-clear commandOut;
-clear params_str;
-clear param;
-clear name;
-clear value;
-clear i;
+clear run_config_command script status commandOut params_str param name value i;

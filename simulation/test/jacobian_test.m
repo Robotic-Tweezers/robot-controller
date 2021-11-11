@@ -12,3 +12,5 @@ assert(isequal(jacobian, expected));
 
 clear jacobian;
 clear expected;
+
+fprintf("PASS\n");
