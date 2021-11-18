@@ -52,6 +52,8 @@ for i = 1:size(project.Files, 2)
     end
 end
 
+robot = create_robot();
+
 fprintf("Setup complete, cleaning workspace.\n");
 
 % Cleanup
