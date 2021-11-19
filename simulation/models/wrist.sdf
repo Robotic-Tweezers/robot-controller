@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.7'>
   <model name='SphericalWrist'>
-    <link name='Servo1'>
+    <link name='servo1'>
       <inertial>
         <mass>0.1</mass>
         <inertia>
@@ -35,7 +35,7 @@
         </geometry>
       </collision>
     </link>
-    <link name='Servo2'>
+    <link name='servo2'>
       <inertial>
         <mass>0.1</mass>
         <inertia>
@@ -46,10 +46,10 @@
           <iyz>0</iyz>
           <izz>0.125</izz>
         </inertia>
-        <pose>0 0 0.1 1.5707 -0 0</pose>
+        <pose>0 0 0.075 1.5707 -0 0</pose>
       </inertial>
       <visual name='visual'>
-        <pose>0 0 0.1 1.5707 -0 0</pose>
+        <pose>0 0 0.075 1.5707 -0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.02</radius>
@@ -60,7 +60,7 @@
       <collision name='collision'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose>0 0 0.1 1.5707 -0 0</pose>
+        <pose>0 0 0.075 1.5707 -0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.02</radius>
@@ -70,7 +70,7 @@
       </collision>
     </link>
     <!--
-    <link name='Servo1'>
+    <link name='servo1'>
       <inertial>
         <mass>0.1</mass>
         <inertia>
@@ -105,7 +105,7 @@
       </collision>
     </link>
     -->
-    <link name='Link1'>
+    <link name='link1'>
       <inertial>
         <mass>0.01</mass>
         <inertia>
@@ -140,7 +140,7 @@
       </collision>
     </link>
     <!--
-    <link name='Link2_1'>
+    <link name='link2_1'>
       <inertial>
         <mass>0.01</mass>
         <inertia>
@@ -176,8 +176,8 @@
     </link>
     -->
     <joint name='theta' type='revolute'>
-      <parent>Servo1</parent>
-      <child>Link1</child>
+      <parent>servo1</parent>
+      <child>link1</child>
       <pose>0 0 0 0 -0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
@@ -190,8 +190,8 @@
       </axis>
     </joint>
     <joint name='servo1_joint' type='fixed'>
-      <parent>Link1</parent>
-      <child>Servo2</child>
+      <parent>link1</parent>
+      <child>servo2</child>
       <pose>0 0 0 0 -0 0</pose>
     </joint>
   <!--
