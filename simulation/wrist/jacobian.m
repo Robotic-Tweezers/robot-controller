@@ -18,7 +18,7 @@ for i=1:size(dh_parameters, 1)
     d = dh_parameters(i, 2);
     a = dh_parameters(i, 3);
     alpha = dh_parameters(i, 4);
-    end_effector = end_effector * denavit_hartenberg_transform(theta(i), d, a, alpha);
+    end_effector = end_effector * denavitHartenbergTransform(theta(i), d, a, alpha);
     origins(i+1, :) = end_effector(1:3, 4);
     k_axes(i+1, :) = end_effector(1:3, 3);
 end
