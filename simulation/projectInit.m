@@ -56,11 +56,12 @@ robot = createSphericalWrist();
 showdetails(robot);
 % Kp = parameters('KP');
 % Kv = parameters('KV');
-Kp = [0 0 0 0.9 0.5 0.9]';
-Kv = [0 0 0 0.1 0.5 0.1]';
+Kp = diag([0.1 0.5 0.2 0.9 0.5 0.9]);
+Kv = diag([0.1 0.5 0.1 0.1 0.5 0.1]);
 length1 = parameters('LENGTH1');
 length2 = parameters('LENGTH2');
 theta_0 = [0 0 0]';
+theta_dot_0 = [0 0 0]';
 DOF = 3;
 
 fprintf("Setup complete, cleaning workspace.\n");
