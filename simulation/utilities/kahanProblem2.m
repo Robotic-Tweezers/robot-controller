@@ -17,7 +17,7 @@ q = skew3(s_unit) * (u_unit - v_unit);
 r = skew3(s_unit) * (u_unit + v_unit);
 
 % Sign of the below equation determines the sign of theta
-if (v_unit' * (skew3(s_unit) * (u_unit - v_unit)) < 0) 
+if (v_unit' * (skew3(s_unit) * (u_unit - v_unit)) < 0)
     theta = round(-2 * atan(norm(q) / norm(r)), 6);
 else
     theta = round(2 * atan(norm(q) / norm(r)), 6);
