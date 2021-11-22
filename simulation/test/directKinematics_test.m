@@ -1,47 +1,49 @@
 theta = zeros(3, 1);
-expected_frame = eye(3);
-expected_origin = [0, 0, parameters('LENGTH1') + parameters('LENGTH2')]';
-[frame, origin] = directKinematics(theta, parameters);
-assert(isequal(frame, expected_frame));
-assert(isequal(origin, expected_origin));
+base_frame = round(expm(pi * skew3([1 0 0]')), 6);
+expected_frame = base_frame * eye(3);
+expected_origin = base_frame * [0, 0, parameters('LENGTH1') + parameters('LENGTH2')]';
+[frame, origin] = directKinematics(theta);
+assert(isequal(round(frame, 4), round(expected_frame, 4)));
+assert(isequal(round(origin, 4), round(expected_origin, 4)));
 
 theta = [pi/2, 0, 0];
-expected_frame = [
+expected_frame = base_frame * [
     [0, -1, 0];
     [1, 0, 0];
     [0, 0, 1];
 ];
-expected_origin = [0, 0, parameters('LENGTH1') + parameters('LENGTH2')]';
-[frame, origin] = directKinematics(theta, parameters);
-assert(isequal(frame, expected_frame));
-assert(isequal(origin, expected_origin));
+expected_origin = base_frame * [0, 0, parameters('LENGTH1') + parameters('LENGTH2')]';
+[frame, origin] = directKinematics(theta);
+assert(isequal(round(frame, 4), round(expected_frame, 4)));
+assert(isequal(round(origin, 4), round(expected_origin, 4)));
 
 theta = [0, pi/2, 0];
-expected_frame = [
+expected_frame = base_frame * [
     [0, 0, -1];
     [0, 1, 0];
     [1, 0, 0];
 ];
-expected_origin = [-parameters('LENGTH2'), 0, parameters('LENGTH1')]';
-[frame, origin] = directKinematics(theta, parameters);
-assert(isequal(frame, expected_frame));
-assert(isequal(origin, expected_origin));
+expected_origin = base_frame * [-parameters('LENGTH2'), 0, parameters('LENGTH1')]';
+[frame, origin] = directKinematics(theta);
+assert(isequal(round(frame, 4), round(expected_frame, 4)));
+assert(isequal(round(origin, 4), round(expected_origin, 4)));
 
 theta = [0, 0, pi/2];
-expected_frame = [
+expected_frame = base_frame * [
     [0, -1, 0];
     [1, 0, 0];
     [0, 0, 1];
 ];
-expected_origin = [0, 0, parameters('LENGTH1') + parameters('LENGTH2')]';
-[frame, origin] = directKinematics(theta, parameters);
-assert(isequal(frame, expected_frame));
-assert(isequal(origin, expected_origin));
+expected_origin = base_frame * [0, 0, parameters('LENGTH1') + parameters('LENGTH2')]';
+[frame, origin] = directKinematics(theta);
+assert(isequal(round(frame, 4), round(expected_frame, 4)));
+assert(isequal(round(origin, 4), round(expected_origin, 4)));
 
 clear theta;
 clear expected_frame;
 clear expected_origin;
 clear frame;
+clear base_frame;
 clear origin;
 
 fprintf("PASS\n");

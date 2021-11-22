@@ -6,8 +6,8 @@ function [theta] = inverseKinematics(end_effector_frame, psi)
 %   if it exists and returns Nan otherwise.
 
 % Base frame and desired frame
-frame0 = eye(3); 
-frame3 = frame0 * end_effector_frame; 
+frame0 = round(expm(pi * skew3([1 0 0]')), 6); 
+frame3 = end_effector_frame; 
 
 % i and k unit vectors in frame 0 and 3
 i_unit0 = frame0 * [1, 0, 0]';

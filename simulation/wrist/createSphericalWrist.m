@@ -3,4 +3,5 @@ function robot = createSphericalWrist()
 %   Loads SDF description of the spherical wrist used for the robot
 %   tweezers project.
 robot = importrobot("models/sdf/wrist.sdf", 'DataFormat', 'column');
+robot.Gravity = [0 0 -9.81]';
 end

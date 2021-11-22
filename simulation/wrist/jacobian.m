@@ -1,18 +1,17 @@
-function [jacobian] = jacobian(theta, parameters)
+function [jacobian] = jacobian(theta)
 %JACOBIAN Calculates the Jacobian matrix corresponding to the current state
 %   Jacobian is a matrix in robotics which provides the relation between 
 %   joint velocities and end-effector velocities of a robot manipulator.
 
-dh_parameters = [
-    [theta(1), parameters('LENGTH1'), 0, pi / 2 ];
-    [theta(2), 0,                     0, -pi / 2];
-    [theta(3), parameters('LENGTH2'), 0, 0      ];
+dh_parameters = denavitHartenbergTable(theta);
+end_effector = [
+    expm(pi * skew3([1 0 0]')) zeros(3, 1);
+    zeros(1, 3) 1;
 ];
-end_effector = eye(4);
 jacobian = zeros(6, 3);
 origins = zeros(4, 3);
 k_axes = zeros(4, 3);
-k_axes(1, 3) = 1; 
+k_axes(1, 3) = -1;
 
 for i=1:size(dh_parameters, 1)
     d = dh_parameters(i, 2);
@@ -24,8 +23,8 @@ for i=1:size(dh_parameters, 1)
 end
 
 for i = 1:size(dh_parameters, 1)
-    jacobian(1:3, i) = round(skew3(k_axes(i, :)') * (origins(4, :)' - origins(i, :)'), 6);
-    jacobian(4:6, i) = round(k_axes(i, :), 6);
+    jacobian(1:3, i) = skew3(k_axes(i, :)') * (origins(4, :)' - origins(i, :)');
+    jacobian(4:6, i) = k_axes(i, :);
 end
 
 end

@@ -52,8 +52,16 @@ for i = 1:size(project.Files, 2)
     end
 end
 
-robot = importrobot("models\sdf\wrist.sdf", 'DataFormat', 'column');
+robot = createSphericalWrist();
 showdetails(robot);
+% Kp = parameters('KP');
+% Kv = parameters('KV');
+Kp = [0 0 0 0.9 0.5 0.9]';
+Kv = [0 0 0 0.1 0.5 0.1]';
+length1 = parameters('LENGTH1');
+length2 = parameters('LENGTH2');
+theta_0 = [0 0 0]';
+DOF = 3;
 
 fprintf("Setup complete, cleaning workspace.\n");
 

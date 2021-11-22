@@ -4,7 +4,9 @@ from enum import Enum
 build_flags = {
     # Wrist lengths in mm
     "LENGTH1": 10,
-    "LENGTH2": 15
+    "LENGTH2": 15,
+    "KP": 1,
+    "KV": 0
 }
 
 class Process(Enum):
@@ -16,7 +18,6 @@ def string_value(value):
     return "\'\"%s\"\'" % value
 
 def main(source):
-
     if source == Process.PLATFORMIO_BUILD:
         for name, value in build_flags.items():
             definition_value = string_value(value) if isinstance(value, str) else str(value)

@@ -8,9 +8,9 @@ v2 = vector(2);
 v3 = vector(3);
 
 skew_symmetric_vector = [
-    [0, -v3, v2];
-    [v3, 0, -v1];
-    [-v2, v1, 0]
+    0   -v3 v2;
+    v3  0   -v1;
+    -v2 v1  0
 ];
 
 end

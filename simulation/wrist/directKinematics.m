@@ -1,14 +1,15 @@
-function [end_eff_frame, end_eff_origin] = directKinematics(theta, parameters)
+function [end_eff_frame, end_eff_origin] = directKinematics(theta)
 %DIRECT_KINEMATICS Computes the 6 DOF position of a spherical wrist end-effector given
 %joint states.
-%   Detailed explanation goes here
+%   Used the Denavit Hartenberg convention to calculate the coordinate
+%   frame of each consecutive joint and finally the end effector for a
+%   spherical wrist.
 
-dh_parameters = [
-    [theta(1), parameters('LENGTH1'), 0, pi / 2 ];
-    [theta(2), 0,                     0, -pi / 2];
-    [theta(3), parameters('LENGTH2'), 0, 0      ];
+dh_parameters = denavitHartenbergTable(theta);
+end_effector = [
+    expm(pi * skew3([1 0 0]')) zeros(3, 1);
+    zeros(1, 3) 1;
 ];
-end_effector = eye(4);
 
 for i=1:size(dh_parameters, 1)
     d = dh_parameters(i, 2);
@@ -17,7 +18,7 @@ for i=1:size(dh_parameters, 1)
     end_effector = end_effector * denavitHartenbergTransform(theta(i), d, a, alpha);
 end
 
-end_eff_frame = round(end_effector(1:3, 1:3), 6);
-end_eff_origin = round(end_effector(1:3, 4), 6);
+end_eff_frame = end_effector(1:3, 1:3);
+end_eff_origin = end_effector(1:3, 4);
 
 end

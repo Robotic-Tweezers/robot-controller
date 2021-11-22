@@ -1,9 +1,9 @@
 <?xml version='1.0'?>
 <sdf version='1.7'>
   <model name='spherical_wrist'>
-    <!-- <pose>0 0 0.025 0 -0 0</pose>-->
     <link name='gantry_base'>
       <pose>0 0 0.025 0 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -35,9 +35,9 @@
         </geometry>
       </collision>
     </link>
-    <!-- <pose>0 0 0 3.141593 -0 0</pose> -->
     <link name='servo1'>
       <pose>0 0 0 3.141593 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.1</mass>
         <inertia>
@@ -71,9 +71,9 @@
         </geometry>
       </collision>
     </link>
-    <!-- <pose>0 0 -0.075 -1.5707 -0 0</pose> -->
     <link name='servo2'>
       <pose>0 0 -0.075 -1.5707 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.1</mass>
         <inertia>
@@ -109,6 +109,7 @@
     </link>
     <link name='servo2_rotor'>
       <pose>0 0 -0.075 -1.5707 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.1</mass>
         <inertia>
@@ -142,9 +143,9 @@
         </geometry>
       </collision>
     </link>
-    <!-- <pose>0 0 -0.15 3.141593 -0 0</pose> -->
     <link name='servo3'>
       <pose>0 0 -0.15 3.141593 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.1</mass>
         <inertia>
@@ -178,9 +179,9 @@
         </geometry>
       </collision>
     </link>
-    <!-- <pose>0 0 -0.05 3.141593 -0 0</pose> -->
     <link name='link1'>
       <pose>0 0 -0.04 3.141593 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.01</mass>
         <inertia>
@@ -214,9 +215,9 @@
         </geometry>
       </collision>
     </link>
-    <!-- <pose>0 0 -0.11 3.141593 -0 0</pose> -->
     <link name='link2'>
       <pose>0 0 -0.11 3.141593 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.01</mass>
         <inertia>
@@ -250,9 +251,9 @@
         </geometry>
       </collision>
     </link>
-    <!-- <pose>0 0 -0.19 3.141593 -0 0</pose> -->
     <link name='link3'>
       <pose>0 0 -0.19 3.141593 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.01</mass>
         <inertia>
@@ -286,9 +287,9 @@
         </geometry>
       </collision>
     </link>
-    <!-- <pose>0 0 -0.2675 3.141593 -0 0</pose> -->
     <link name='tweezers'>
       <pose>0 0 -0.2325 3.141593 -0 0</pose>
+      <gravity>1</gravity>
       <inertial>
         <mass>0.01</mass>
         <inertia>
@@ -325,12 +326,11 @@
       <child>link1</child>
       <axis>
         <xyz>0 0 1</xyz>
-        <use_parent_model_frame>true</use_parent_model_frame>
         <limit>
           <lower>-3.1415</lower>
           <upper>3.1415</upper>
-          <effort>-1</effort>
-          <velocity>-1</velocity>
+          <effort>100</effort>
+          <velocity>100</velocity>
         </limit>
       </axis>
     </joint>
@@ -342,8 +342,8 @@
         <limit>
           <lower>-3.1415</lower>
           <upper>3.1415</upper>
-          <effort>-1</effort>
-          <velocity>-1</velocity>
+          <effort>100</effort>
+          <velocity>100</velocity>
         </limit>
       </axis>
     </joint>
@@ -355,8 +355,8 @@
         <limit>
           <lower>-3.1415</lower>
           <upper>3.1415</upper>
-          <effort>-1</effort>
-          <velocity>-1</velocity>
+          <effort>100</effort>
+          <velocity>100</velocity>
         </limit>
       </axis>
     </joint>

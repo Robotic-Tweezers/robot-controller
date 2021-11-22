@@ -6,27 +6,26 @@ function [transform] = denavitHartenbergTransform(theta, d, a, alpha)
 %   translational offset about k (d), a distance seperation about i (a) 
 %   and a twist motion about i (alpha) not to confuse with imaginary unit
 
-i_unit = [1, 0, 0]';
-k_unit = [0, 0, 1]';
-zero3 = zeros(3, 1);
+i_unit = [1 0 0]';
+k_unit = [0 0 1]';
 
 % Calulate using the product of the angular and traslation matricies
 % corresponding to each parameter
 z_translation = [
-    [eye(3), d * k_unit];
-    [zero3',          1]
+    eye(3)      d * k_unit;
+    zeros(1, 3) 1
 ];
 z_rotation = [
-    [expm(theta * skew3(k_unit)), zero3];
-    [zero3',                         1]
+    expm(theta * skew3(k_unit)) zeros(3, 1);
+    zeros(1, 3)                 1
 ];
 i_translation = [
-    [eye(3), a * i_unit];
-    [zero3',          1]
+    eye(3)      a * i_unit;
+    zeros(1, 3) 1
 ];
 i_rotation = [
-    [expm(alpha * skew3(i_unit)), zero3];
-    [zero3',                         1]
+    expm(alpha * skew3(i_unit)) zeros(3, 1);
+    zeros(1, 3)                 1
 ];
 
 transform = z_translation * z_rotation * i_translation * i_rotation;
