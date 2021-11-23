@@ -1,13 +1,12 @@
 #include <utils.hpp>
-#include <math.h>
-
-using namespace std;
-using namespace Eigen;
-using namespace robot_tweezers;
-
-Matrix3f skew3(Vector3f s)
+extern "C"
 {
-    Matrix3f skew_sym;
+#include <math.h>
+}
+
+Eigen::Matrix3f robot_tweezers::skew3(Eigen::Vector3f s)
+{
+    Eigen::Matrix3f skew_sym;
     skew_sym << 
         0, -s(2), s(1),
         s(2), 0, -s(0),
@@ -15,9 +14,9 @@ Matrix3f skew3(Vector3f s)
     return skew_sym;
 }
 
-Matrix3f xRotation(float alpha)
+Eigen::Matrix3f robot_tweezers::xRotation(float alpha)
 {
-    Matrix3f rotation;
+    Eigen::Matrix3f rotation;
     rotation << 
         1, 0, 0,
         0, cosf(alpha), -sinf(alpha),
@@ -25,9 +24,9 @@ Matrix3f xRotation(float alpha)
     return rotation;
 }
 
-Matrix3f zRotation(float theta)
+Eigen::Matrix3f robot_tweezers::zRotation(float theta)
 {
-    Matrix3f rotation;
+    Eigen::Matrix3f rotation;
     rotation << 
         cosf(theta), -sinf(theta), 0,
         sinf(theta), cosf(theta), 0,
@@ -35,14 +34,14 @@ Matrix3f zRotation(float theta)
     return rotation;
 }
 
-float Kahan::problem1(Vector3f s, Vector3f t)
+float robot_tweezers::Kahan::problem1(Eigen::Vector3f s, Eigen::Vector3f t)
 {
-    Vector3f u = s.normalized() - t.normalized();
-    Vector3f v = s.normalized() + t.normalized();
+    Eigen::Vector3f u = s.normalized() - t.normalized();
+    Eigen::Vector3f v = s.normalized() + t.normalized();
     return atanf(u.norm() / v.norm()) * 2.00F;
 }
 
-float Kahan::problem2(Vector3f s_unit, Vector3f u, Vector3f v, bool* valid)
+float robot_tweezers::Kahan::problem2(Eigen::Vector3f s_unit, Eigen::Vector3f u, Eigen::Vector3f v, bool* valid)
 {
     u.normalize();
     v.normalize();
@@ -56,13 +55,13 @@ float Kahan::problem2(Vector3f s_unit, Vector3f u, Vector3f v, bool* valid)
     return 0.00F;
 }
 
-pair<float[2], float[2]> Kahan::problem3(Vector3f s_unit, Vector3f t_unit, Vector3f u, Vector3f v)
+std::pair<float[2], float[2]> robot_tweezers::Kahan::problem3(Eigen::Vector3f s_unit, Eigen::Vector3f t_unit, Eigen::Vector3f u, Eigen::Vector3f v)
 {
-    pair<float[2], float[2]> ret;
+    std::pair<float[2], float[2]> ret;
     return ret;
 }
 
-float Kahan::problem4(float a, float b, float c)
+float robot_tweezers::Kahan::problem4(float a, float b, float c)
 {
     return 0.00F;
 }

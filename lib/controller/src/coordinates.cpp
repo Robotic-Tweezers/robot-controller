@@ -3,6 +3,9 @@
 using namespace Eigen;
 using namespace robot_tweezers;
 
+
+Coordinates::Coordinates() { }
+
 Coordinates::Coordinates(Matrix3f& frame, Vector3f& origin)
 {
     this->frame = frame;
@@ -11,10 +14,10 @@ Coordinates::Coordinates(Matrix3f& frame, Vector3f& origin)
 
 Coordinates::Coordinates(Matrix4f& coordinates)
 {
-    setMatrix(coordinates);
+    setCoordinates(coordinates);
 }
 
-void Coordinates::setMatrix(Matrix4f& coordinates)
+void Coordinates::setCoordinates(Matrix4f& coordinates)
 {
     for (int i = 0; i < 3; i++)
     {
@@ -26,7 +29,7 @@ void Coordinates::setMatrix(Matrix4f& coordinates)
     }
 }
 
-Matrix4f Coordinates::getMatrix()
+Matrix4f Coordinates::getCoordinates()
 {
     Matrix4f matrix;
     matrix << 

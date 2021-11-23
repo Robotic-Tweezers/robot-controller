@@ -16,10 +16,23 @@ volatile int duty_cycle;
 
 static void controlLoop(void* arg)
 {
-    // TaskSpaceController controller;
+    float theta[3]; // = read_encoder();
+    Vector3f theta_dot, gravity_torque, applied_torque;
+    Kinematic wrist_kinematics(theta);
+    Coordinates desired_pos, desired_vel;
+    VectorXf position_err(6, 1), velocity_err(6, 1), state_err(6, 1);
+    MatrixXf position_gain(6, 6), velocity_gain(6, 6);
+
     while (true)
     {
+        Coordinates end_effector_coords = wrist_kinematics.directKinematics(theta);
+        // position_err = position_error(end_effector_coords, desired_pos);
+        // velocity_err = desired_vel - (wrist_kinematics.jacobian(theta) * theta_dot);
+        state_err = (position_gain * position_err) + (velocity_gain * velocity_err);
 
+        applied_torque = gravity_torque + (wrist_kinematics.jacobian(theta).transpose() * state_err);
+
+        vTaskDelay(TIME_IN_MS(1000UL));
     }
 }
 
@@ -61,8 +74,9 @@ void setup()
 
     Serial.begin(9600);
 
-    status &= xTaskCreate(pulseMotor, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+    // status &= xTaskCreate(pulseMotor, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    // status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+    status &= xTaskCreate(controlLoop, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     if (status != pdPASS)
     {

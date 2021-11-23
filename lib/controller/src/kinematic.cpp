@@ -50,6 +50,7 @@ MatrixXf Kinematic::jacobian(float theta[])
     MatrixXf jacobian_matrix(6, 3);
     for (int i = 0; i < 3; i++)
     {
+        /*
         Vector3f angular_contrib = k_axes[i].cross3(origins[3] - origins[i]);
         jacobian_matrix(0, i) = angular_contrib(0);
         jacobian_matrix(1, i) = angular_contrib(1);
@@ -57,6 +58,7 @@ MatrixXf Kinematic::jacobian(float theta[])
         jacobian_matrix(3, i) = k_axes[i](0);
         jacobian_matrix(4, i) = k_axes[i](1);
         jacobian_matrix(5, i) = k_axes[i](2);
+        */
     }
 
     return jacobian_matrix;
