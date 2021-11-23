@@ -34,7 +34,6 @@ void _setup()
     delay(2000);
     UNITY_BEGIN();
 
-    RUN_TEST(unittest_setCoordinates);
 }
 
 void _loop()

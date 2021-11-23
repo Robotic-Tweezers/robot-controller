@@ -24,7 +24,7 @@ Kinematic::Kinematic(float theta[])
     updateDHTable(theta);
 }
 
-Coordinates Kinematic::directKinematics(float theta[])
+Matrix4f Kinematic::directKinematics(float theta[])
 {
     Matrix4f end_effector;
     origins[0] << 0, 0, 0;
@@ -42,7 +42,7 @@ Coordinates Kinematic::directKinematics(float theta[])
         k_axes[i + 1] << end_effector(0, 2), end_effector(1, 2), end_effector(2, 2);
     }
 
-    return Coordinates(end_effector);
+    return end_effector;
 }
 
 MatrixXf Kinematic::jacobian(float theta[])

@@ -6,18 +6,18 @@ using namespace robot_tweezers;
 
 Coordinates::Coordinates() { }
 
-Coordinates::Coordinates(Matrix3f& frame, Vector3f& origin)
+Coordinates::Coordinates(Matrix3f frame, Vector3f origin)
 {
     this->frame = frame;
     this->origin = origin;
 }
 
-Coordinates::Coordinates(Matrix4f& coordinates)
+Coordinates::Coordinates(Matrix4f coordinates)
 {
     setCoordinates(coordinates);
 }
 
-void Coordinates::setCoordinates(Matrix4f& coordinates)
+void Coordinates::setCoordinates(Matrix4f coordinates)
 {
     for (int i = 0; i < 3; i++)
     {

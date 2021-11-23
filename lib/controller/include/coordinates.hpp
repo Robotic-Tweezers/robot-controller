@@ -33,21 +33,21 @@ namespace robot_tweezers
          * @param frame The coordinate frame
          * @param origin The coordinate origin
          */
-        Coordinates(Eigen::Matrix3f& frame, Eigen::Vector3f& origin);
+        Coordinates(Eigen::Matrix3f frame, Eigen::Vector3f origin);
 
         /**
          * @brief Construct a new Coordinates object
          * 
          * @param coordinates The 4x4 matrix representing the coordinate frame and origin
          */
-        Coordinates(Eigen::Matrix4f& coordinates);
+        Coordinates(Eigen::Matrix4f coordinates);
 
         /**
          * @brief Sets
          * 
          * @param coordinates 
          */
-        void setCoordinates(Eigen::Matrix4f& coordinates);
+        void setCoordinates(Eigen::Matrix4f coordinates);
 
         Eigen::Matrix4f getCoordinates();
     };

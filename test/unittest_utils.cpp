@@ -11,7 +11,6 @@ void unittest_skew3(void)
         0, -3, 2,
         3, 0, -1,
         -2, 1,  0;
-
     TEST_ASSERT_TRUE(robot_tweezers::skew3(test) == expected);
 }
 
@@ -22,7 +21,6 @@ void unittest_xRotation(void)
         1, 0, 0,
         0, 1, 0,
         0, 0, 1;
-    
     TEST_ASSERT_TRUE(robot_tweezers::xRotation(0) == expected);
     expected << 
         1, 0, 0,
@@ -70,23 +68,4 @@ void unittest_Kahan_problem3(void)
 void unittest_Kahan_problem4(void)
 {
     // float robot_tweezers::Kahan::problem4(a, b, c)
-}
-
-void setup()
-{
-    // NOTE!!! Wait for >2 secs
-    // if board doesn't support software reset via Serial.DTR/RTS
-    delay(2000);
-    UNITY_BEGIN();
-
-    RUN_TEST(unittest_skew3);
-    RUN_TEST(unittest_xRotation);
-    RUN_TEST(unittest_zRotation);
-    RUN_TEST(unittest_Kahan_problem1);
-    RUN_TEST(unittest_Kahan_problem2);
-}
-
-void loop()
-{
-    UNITY_END();
 }

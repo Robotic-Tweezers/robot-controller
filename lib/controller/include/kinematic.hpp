@@ -3,6 +3,7 @@
 
 #include <coordinates.hpp>
 #include <utils.hpp>
+#include <types.hpp>
 
 namespace robot_tweezers
 {
@@ -34,9 +35,11 @@ namespace robot_tweezers
 
         Kinematic(float theta[]);
 
-        robot_tweezers::Coordinates directKinematics(float theta[]);
+        Eigen::Matrix4f directKinematics(float theta[]);
 
         Eigen::MatrixXf jacobian(float theta[]);
+
+        Eigen::Vector3f gravityTorque(float theta[]);
     };
 }
 
