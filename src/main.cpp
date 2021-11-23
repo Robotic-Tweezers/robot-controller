@@ -45,6 +45,15 @@ void print(Matrix3f& m)
     }
 }
 
+AngleAxisf euler2Quaternion( const float roll, const float pitch, const float yaw )
+{
+    Eigen::AngleAxisf rollAngle(roll, Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf pitchAngle(pitch, Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf yawAngle(yaw, Eigen::Vector3f::UnitZ());
+
+    return AngleAxisf(yawAngle * pitchAngle * rollAngle);
+}
+
 static void controlLoop(void* arg)
 {
     float theta[3] = {0, PI / 2, 0}; // = read_encoder();
@@ -58,7 +67,13 @@ static void controlLoop(void* arg)
     {
         // Direct kinematics of joint state
         actual_pos.setCoordinates(wrist_kinematics.directKinematics(theta));
-        Matrix3f::euler
+        print(actual_pos.frame);
+        Vector3f a = actual_pos.frame.eulerAngles(0, 1, 2);
+        Matrix3f b = euler2Quaternion(a(0), a(1), a(2)).matrix();
+        print(b);
+
+        //Matrix3f::eulerAngles
+        // Quaternionf::
         position_err << 
             desired_pos.origin - actual_pos.origin;
         // position_err = position_error(end_effector_coords, desired_pos);
@@ -122,7 +137,7 @@ void setup()
 
     // status &= xTaskCreate(pulseMotor, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    status &= xTaskCreate(controlLoop, NULL, 2 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
+    status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
 
     if (status != pdPASS)
     {
