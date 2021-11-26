@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <FreeRTOS_TEENSY4.h>
 #include <TimeLib.h>
-
 #include <config.hpp>
 #include <stepper.hpp>
 #include <kinematic.hpp>
@@ -9,6 +8,7 @@
 
 #define TIME_IN_MS(TIME) ((TIME) * configTICK_RATE_HZ / 1000UL)
 #define TIME_IN_US(TIME) ((TIME) * configTICK_RATE_HZ / 1000000UL)
+#define LED              (13)
 
 using namespace Eigen;
 using namespace robot_tweezers;
@@ -19,32 +19,7 @@ volatile Vector6f desired_vel;
 const Vector6f position_gain(0.1, 0.5, 0.2, 0.9, 0.5, 0.9);
 const Vector6f velocity_gain(0.1, 0.5, 0.1, 0.1, 0.5, 0.1);
 
-robot_tweezers::Stepper test_stepper;
-
-void print(Vector3f& v)
-{
-    for (int i = 0; i < 3; i++)
-    {
-        Serial.print(v(i));
-        Serial.print(" ");
-    }
-    
-    Serial.println();
-}
-
-void print(Matrix3f& m)
-{   
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            Serial.print(m(i, j));
-            Serial.print(" ");
-        }
-        
-        Serial.println();
-    }
-}
+Stepper test_stepper;
 
 AngleAxisf euler2Quaternion( const float roll, const float pitch, const float yaw )
 {
@@ -68,15 +43,15 @@ static void controlLoop(void* arg)
     {
         // Direct kinematics of joint state
         actual_pos.setCoordinates(wrist_kinematics.directKinematics(theta));
-        print(actual_pos.frame);
-        Vector3f a = actual_pos.frame.eulerAngles(0, 1, 2);
-        Matrix3f b = euler2Quaternion(a(0), a(1), a(2)).matrix();
-        print(b);
-
+        PRINT(actual_pos.origin);
+        
+        //Vector3f a = actual_pos.frame.eulerAngles(0, 1, 2);
+        //Matrix3f b = euler2Quaternion(a(0), a(1), a(2)).matrix();
+        //print(b);
         //Matrix3f::eulerAngles
-        // Quaternionf::
-        position_err << 
-            desired_pos.origin - actual_pos.origin;
+        //Quaternionf::
+        //position_err << 
+        //    desired_pos.origin - actual_pos.origin;
         // position_err = position_error(end_effector_coords, desired_pos);
         // velocity_err = desired_vel - (wrist_kinematics.jacobian(theta) * theta_dot);
         // state_err = (position_gain * position_err) + (velocity_gain * velocity_err);
@@ -134,11 +109,14 @@ void setup()
 
     Serial.begin(9600);
 
+    pinMode(LED, OUTPUT);
+    digitalWrite(LED, HIGH);
+
     test_stepper = Stepper(11, 12, 10, 9, 8);
 
     status &= xTaskCreate(pulseMotor, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    // status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
+    status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+    status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 3, NULL);
 
     if (status != pdPASS)
     {

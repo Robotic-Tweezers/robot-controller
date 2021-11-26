@@ -29,6 +29,11 @@ namespace robot_tweezers
          */
         Eigen::Matrix4f denavitHartenbergTransform(float theta, float length, float alpha);
 
+        /**
+         * @brief 
+         * 
+         * @param theta 
+         */
         inline void updateDHTable(float theta[]);
         
         public:

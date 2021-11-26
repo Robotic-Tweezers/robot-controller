@@ -3,6 +3,21 @@
  
 #include <ArduinoEigen.h>
 
+// Print an Eigen class
+#define PRINT(MATRIX) \
+({ \
+    for (int i = 0; i < (MATRIX).rows(); i++) \
+    { \
+        for (int j = 0; j < (MATRIX).cols(); j++) \
+        { \
+            Serial.print((MATRIX)(i, j)); \
+            Serial.print(" "); \
+        } \
+         \
+        Serial.println(); \
+    } \
+})
+
 namespace robot_tweezers
 {
     class Kahan
