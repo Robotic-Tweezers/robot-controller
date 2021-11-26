@@ -68,6 +68,8 @@ namespace robot_tweezers
          * @brief 
          * 
          */
+        void setSpeed(float speed);
+        
         void stepMotor(void);
 
         void setResolution(resolution_e resolution);

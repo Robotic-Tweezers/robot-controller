@@ -8,7 +8,6 @@
 
 #define TIME_IN_MS(TIME) ((TIME) * configTICK_RATE_HZ / 1000UL)
 #define TIME_IN_US(TIME) ((TIME) * configTICK_RATE_HZ / 1000000UL)
-#define LED              (13)
 
 using namespace Eigen;
 using namespace robot_tweezers;
@@ -20,6 +19,8 @@ const Vector6f position_gain(0.1, 0.5, 0.2, 0.9, 0.5, 0.9);
 const Vector6f velocity_gain(0.1, 0.5, 0.1, 0.1, 0.5, 0.1);
 
 Stepper test_stepper;
+uint8_t enc_a = 22;
+uint8_t enc_b = 23;
 
 AngleAxisf euler2Quaternion( const float roll, const float pitch, const float yaw )
 {
@@ -64,9 +65,10 @@ static void controlLoop(void* arg)
 
 static void pulseMotor(void* arg)
 {
-    unsigned int delay = 175U;
+    unsigned int delay = 500U;
     while (true)
     {
+        digitalWrite(LED_BUILTIN, digitalRead(enc_a));
         test_stepper.stepMotor();
         vTaskDelay(TIME_IN_US(delay));
     }
@@ -109,8 +111,11 @@ void setup()
 
     Serial.begin(9600);
 
-    pinMode(LED, OUTPUT);
-    digitalWrite(LED, HIGH);
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(enc_a, INPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+    // analogWriteFrequency(LED_BUILTIN, 1)
+    // analogWrite(LED_BUILTIN, 128);
 
     test_stepper = Stepper(11, 12, 10, 9, 8);
 
