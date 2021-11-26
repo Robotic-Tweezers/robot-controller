@@ -3,22 +3,23 @@
 #include <TimeLib.h>
 
 #include <config.hpp>
-#include <motor.hpp>
+#include <stepper.hpp>
 #include <kinematic.hpp>
 #include <coordinates.hpp>
 
 #define TIME_IN_MS(TIME) ((TIME) * configTICK_RATE_HZ / 1000UL)
+#define TIME_IN_US(TIME) ((TIME) * configTICK_RATE_HZ / 1000000UL)
 
 using namespace Eigen;
 using namespace robot_tweezers;
 
-motor::Motor sg90(1, 11);
 time_t rtc_time;
 
-volatile int duty_cycle;
 volatile Vector6f desired_vel;
 const Vector6f position_gain(0.1, 0.5, 0.2, 0.9, 0.5, 0.9);
 const Vector6f velocity_gain(0.1, 0.5, 0.1, 0.1, 0.5, 0.1);
+
+robot_tweezers::Stepper test_stepper;
 
 void print(Vector3f& v)
 {
@@ -88,11 +89,11 @@ static void controlLoop(void* arg)
 
 static void pulseMotor(void* arg)
 {
+    unsigned int delay = 175U;
     while (true)
     {
-        sg90.pwmStep(duty_cycle);
-        // sleep for 0.5 ms
-        vTaskDelay(TIME_IN_MS(1000UL));
+        test_stepper.stepMotor();
+        vTaskDelay(TIME_IN_US(delay));
     }
 }
 
@@ -103,22 +104,21 @@ static void pollSerial(void* arg)
         if (Serial.available() > 0)
         {
             String message = Serial.readString(128);
-            if (message.startsWith("-r"))
+            int res = message.toInt();
+            switch (res)
             {
-                /*
-                int last_space = 2;
-                int theta_i = 0;
-
-                for (unsigned int i = 3; i < message.length(); i++)
-                {
-                    if (message[i] == ' ')
-                    {
-                        theta[theta_i++] = message.substring(last_space + 1, i).toFloat();
-                        last_space = i;
-                    }
-                }
-                theta[theta_i] = message.substring(last_space + 1).toFloat();
-                */
+            case 8:
+                test_stepper.setResolution(MICROSTEP8);
+                break;
+            case 32:
+                test_stepper.setResolution(MICROSTEP32);
+                break;
+            case 64:
+                test_stepper.setResolution(MICROSTEP64);
+                break;
+            case 16:
+                test_stepper.setResolution(MICROSTEP16);
+                break;
             }
 
             Serial.clear();
@@ -131,13 +131,14 @@ static void pollSerial(void* arg)
 void setup()
 {
     portBASE_TYPE status = pdPASS;
-    duty_cycle = 2;
 
     Serial.begin(9600);
 
-    // status &= xTaskCreate(pulseMotor, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    test_stepper = Stepper(11, 12, 10, 9, 8);
+
+    status &= xTaskCreate(pulseMotor, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
+    // status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
 
     if (status != pdPASS)
     {
