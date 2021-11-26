@@ -3,20 +3,24 @@
  
 #include <ArduinoEigen.h>
 
-// Print an Eigen class
-#define PRINT(MATRIX) \
-({ \
-    for (int i = 0; i < (MATRIX).rows(); i++) \
-    { \
-        for (int j = 0; j < (MATRIX).cols(); j++) \
+#ifdef DEBUG
+    // Print an Eigen class
+    #define PRINT(MATRIX) \
+    ({ \
+        for (int i = 0; i < (MATRIX).rows(); i++) \
         { \
-            Serial.print((MATRIX)(i, j)); \
-            Serial.print(" "); \
+            for (int j = 0; j < (MATRIX).cols(); j++) \
+            { \
+                Serial.print((MATRIX)(i, j)); \
+                Serial.print(" "); \
+            } \
+            \
+            Serial.println(); \
         } \
-         \
-        Serial.println(); \
-    } \
-})
+    })
+#else
+    #define PRINT(MATRIX)
+#endif // DEBUG
 
 namespace robot_tweezers
 {
