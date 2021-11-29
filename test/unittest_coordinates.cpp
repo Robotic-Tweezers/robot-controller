@@ -3,7 +3,7 @@
 
 #include <coordinates.hpp>
 
-using namespace robot_tweezers;
+using namespace RobotTweezers;
 
 void unittest_setCoordinates(void)
 {

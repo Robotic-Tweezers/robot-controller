@@ -10,67 +10,59 @@
 #define TIME_IN_US(TIME) ((TIME) * configTICK_RATE_HZ / 1000000UL)
 
 using namespace Eigen;
-using namespace robot_tweezers;
+using namespace RobotTweezers;
 
 time_t rtc_time;
 
-volatile Vector6f desired_vel;
-const Vector6f position_gain(0.1, 0.5, 0.2, 0.9, 0.5, 0.9);
-const Vector6f velocity_gain(0.1, 0.5, 0.1, 0.1, 0.5, 0.1);
+const float kp[6] = {0, 0, 0, 1.00, 1.00, 1.00};
+const float kv[6] = {0.1, 0.5, 0.1, 0.1, 0.5, 0.1};
+volatile float desired_position;
 
-Stepper test_stepper;
-uint8_t enc_a = 22;
-uint8_t enc_b = 23;
-
-AngleAxisf euler2Quaternion( const float roll, const float pitch, const float yaw )
-{
-    Eigen::AngleAxisf rollAngle(roll, Eigen::Vector3f::UnitX());
-    Eigen::AngleAxisf pitchAngle(pitch, Eigen::Vector3f::UnitY());
-    Eigen::AngleAxisf yawAngle(yaw, Eigen::Vector3f::UnitZ());
-
-    return AngleAxisf(yawAngle * pitchAngle * rollAngle);
-}
+Stepper test_stepper(11, 12, 10, 9, 8, 22, 23);
 
 static void controlLoop(void* arg)
 {
-    float theta[3] = {0, PI / 2, 0}; // = read_encoder();
+    float theta[3] = {0, 0, 0};
+    const unsigned int loop_period = 200; // ms
     Vector3f theta_dot, gravity_torque, applied_torque;
     Kinematic wrist_kinematics(theta);
-    Coordinates actual_pos, desired_pos;
-    Vector6f position_err, velocity_err, state_err;
-    Matrix6f position_gain, velocity_gain;
+    Coordinates position, actual_position;
+    Vector6f velocity(0, 0, 0, 0, 0, 0);
+    Vector6f position_error, velocity_error, state_error;
+    MatrixXf jacobian_matrix;
+
+    Matrix6f position_gain = vectorToDiagnol6(kp);
+    Matrix6f velocity_gain = vectorToDiagnol6(kv);
+
+    position.frame = xRotation(PI) * zRotation(-PI / 2);
+    // position.origin << 0, 0, -25;
 
     while (true)
     {
-        // Direct kinematics of joint state
-        actual_pos.setCoordinates(wrist_kinematics.directKinematics(theta));
-        PRINT(actual_pos.origin);
-        
-        //Vector3f a = actual_pos.frame.eulerAngles(0, 1, 2);
-        //Matrix3f b = euler2Quaternion(a(0), a(1), a(2)).matrix();
-        //print(b);
-        //Matrix3f::eulerAngles
-        //Quaternionf::
-        //position_err << 
-        //    desired_pos.origin - actual_pos.origin;
-        // position_err = position_error(end_effector_coords, desired_pos);
-        // velocity_err = desired_vel - (wrist_kinematics.jacobian(theta) * theta_dot);
-        // state_err = (position_gain * position_err) + (velocity_gain * velocity_err);
+        theta[0] = test_stepper.encoder.position();
+        theta_dot << test_stepper.encoder.velocity((float)loop_period / 1000.0), 0, 0;
+        Serial.println(theta[0]);
 
-        //applied_torque = gravity_torque + (wrist_kinematics.jacobian(theta).transpose() * state_err);
+        jacobian_matrix = wrist_kinematics.jacobian(theta);
+        gravity_torque = wrist_kinematics.gravityTorque(theta);
 
-        vTaskDelay(TIME_IN_MS(1000UL));
-    }
-}
+        // Direct kinematics of joint state (calculate end effector position)
+        actual_position.setCoordinates(wrist_kinematics.directKinematics(theta));
 
-static void pulseMotor(void* arg)
-{
-    unsigned int delay = 500U;
-    while (true)
-    {
-        digitalWrite(LED_BUILTIN, digitalRead(enc_a));
-        test_stepper.stepMotor();
-        vTaskDelay(TIME_IN_US(delay));
+        // Calculate position and velocity error
+        position_error = Coordinates::error(position, actual_position);
+        velocity_error = velocity - (jacobian_matrix * theta_dot);
+
+        // Total state error
+        state_error = (position_gain * position_error) + (velocity_gain * velocity_error);
+
+        // Add gravity contributions
+        applied_torque = gravity_torque + (jacobian_matrix.transpose() * state_error);
+
+        // Set output torques
+        test_stepper.setVelocity(applied_torque(0));
+
+        vTaskDelay(TIME_IN_MS(loop_period));
     }
 }
 
@@ -81,24 +73,9 @@ static void pollSerial(void* arg)
         if (Serial.available() > 0)
         {
             String message = Serial.readString(128);
-            int res = message.toInt();
-            switch (res)
-            {
-            case 8:
-                test_stepper.setResolution(MICROSTEP8);
-                break;
-            case 32:
-                test_stepper.setResolution(MICROSTEP32);
-                break;
-            case 64:
-                test_stepper.setResolution(MICROSTEP64);
-                break;
-            case 16:
-                test_stepper.setResolution(MICROSTEP16);
-                break;
-            }
-
+            desired_position = message.toFloat();
             Serial.clear();
+            Serial.println(desired_position);
         }
 
         vTaskDelay(TIME_IN_MS(200UL));
@@ -112,16 +89,23 @@ void setup()
     Serial.begin(9600);
 
     pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(enc_a, INPUT);
     digitalWrite(LED_BUILTIN, HIGH);
-    // analogWriteFrequency(LED_BUILTIN, 1)
-    // analogWrite(LED_BUILTIN, 128);
 
-    test_stepper = Stepper(11, 12, 10, 9, 8);
+    attachInterrupt(digitalPinToInterrupt(test_stepper.encoder.getPinA()), [](void) -> void
+    {
+        noInterrupts();
+        test_stepper.encoder.pinInterruptA();
+        interrupts();
+    }, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(test_stepper.encoder.getPinB()), [](void) -> void
+    {
+        noInterrupts();
+        test_stepper.encoder.pinInterruptB();
+        interrupts();
+    }, CHANGE);
 
-    status &= xTaskCreate(pulseMotor, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 2, NULL);
-    status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 3, NULL);
+    status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
 
     if (status != pdPASS)
     {

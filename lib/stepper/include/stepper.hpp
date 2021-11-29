@@ -3,15 +3,21 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include <encoder.hpp>
 
-namespace robot_tweezers
+// Could be higher?
+#define MAX_FREQUENCY                   (4000) // Hz
+#define MAX_VELOCITY(RESOLUTION)        ((float)(2 * PI * MAX_FREQUENCY / (200 * (RESOLUTION))))
+#define FREQUENCY(RESOLUTION, VELOCITY) ((float)(200 * (RESOLUTION) * (VELOCITY) / (2 * PI)))
+
+namespace RobotTweezers
 {
     enum resolution_e
     {
-        MICROSTEP8 = 0,
-        MICROSTEP32,
-        MICROSTEP64,
-        MICROSTEP16,
+        MICROSTEP8 = 8,
+        MICROSTEP32 = 32,
+        MICROSTEP64 = 64,
+        MICROSTEP16 = 16,
     };
 
     class Stepper
@@ -23,14 +29,16 @@ namespace robot_tweezers
         uint8_t enable;
         uint8_t microstep1;
         uint8_t microstep2;
-        bool step_state;
-        bool direction_state;
-        resolution_e resolution;
+
+        void setDirection(bool positive);
+
+        void setResolution(resolution_e resolution);
 
         void configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2);
 
         public:
 
+        Encoder encoder;
         /****************************************
          * Step/Direction control
         *****************************************/
@@ -46,7 +54,7 @@ namespace robot_tweezers
          * @param step 
          * @param direction 
          */
-        Stepper(uint8_t step, uint8_t direction);
+        Stepper(uint8_t step, uint8_t direction, uint8_t encoder_a, uint8_t encoder_b);
 
         /**
          * @brief Construct a new Stepper object, uses step, direction and enable
@@ -54,7 +62,7 @@ namespace robot_tweezers
          * @param step 
          * @param direction 
          */
-        Stepper(uint8_t step, uint8_t direction, uint8_t enable);
+        Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t encoder_a, uint8_t encoder_b);
 
         /**
          * @brief Construct a new Stepper object
@@ -62,17 +70,14 @@ namespace robot_tweezers
          * @param step 
          * @param direction 
          */
-        Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2);
+        Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2, 
+            uint8_t encoder_a, uint8_t encoder_b);
 
         /**
          * @brief 
          * 
          */
-        void setSpeed(float speed);
-        
-        void stepMotor(void);
-
-        void setResolution(resolution_e resolution);
+        void setVelocity(float velocity);
     };
 }
 

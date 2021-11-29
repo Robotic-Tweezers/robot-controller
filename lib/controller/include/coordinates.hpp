@@ -2,8 +2,10 @@
 #define _COORDINATES_HPP_
 
 #include <ArduinoEigen.h>
+#include <types.hpp>
+#include <utils.hpp>
 
-namespace robot_tweezers
+namespace RobotTweezers
 {
     class Coordinates
     {
@@ -25,7 +27,7 @@ namespace robot_tweezers
          * @brief Construct a new Coordinates object
          * 
          */
-        Coordinates();
+        Coordinates(void);
 
         /**
          * @brief Construct a new Coordinates object
@@ -33,23 +35,37 @@ namespace robot_tweezers
          * @param frame The coordinate frame
          * @param origin The coordinate origin
          */
-        Coordinates(Eigen::Matrix3f frame, Eigen::Vector3f origin);
+        Coordinates(const Eigen::Matrix3f& frame, Eigen::Vector3f& origin);
 
         /**
          * @brief Construct a new Coordinates object
          * 
          * @param coordinates The 4x4 matrix representing the coordinate frame and origin
          */
-        Coordinates(Eigen::Matrix4f coordinates);
+        Coordinates(const Eigen::Matrix4f& coordinates);
 
         /**
-         * @brief Sets
+         * @brief Sets the frame and origin represented in the 4x4 coordinate matrix
          * 
-         * @param coordinates 
+         * @param coordinates A 4x4 matrix representing the frame and origin
          */
-        void setCoordinates(Eigen::Matrix4f coordinates);
+        void setCoordinates(const Eigen::Matrix4f& coordinates);
 
-        Eigen::Matrix4f getCoordinates();
+        /**
+         * @brief Get the Coordinates as a 4x4 matrix
+         * 
+         * @return Eigen::Matrix4f 
+         */
+        Eigen::Matrix4f getCoordinates(void);
+
+        /**
+         * @brief Calculates the translational and rotational error as a 6 dimensional vector 
+         * 
+         * @param a First coordinates 
+         * @param b Second coordinates 
+         * @return Eigen::Vector6f 
+         */
+        static Eigen::Vector6f error(const Coordinates& a, const Coordinates& b);
     };
 }
 

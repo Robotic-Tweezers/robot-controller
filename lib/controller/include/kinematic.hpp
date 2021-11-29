@@ -5,14 +5,28 @@
 #include <utils.hpp>
 #include <types.hpp>
 
-namespace robot_tweezers
+namespace RobotTweezers
 {
     class Kinematic
     {
         private:
 
+        /**
+         * @brief Holds the xyz origin of each joint variable and end effector
+         * 
+         */
         Eigen::Vector3f origins[4];
+
+        /**
+         * @brief Holds the k axis unit vector for each joint variable and end effector
+         * 
+         */
         Eigen::Vector3f k_axes[4];
+
+        /**
+         * @brief The DH transformation parameters for the wrist manipulator (a is omitted)
+         * 
+         */
         float dh_table[3][3] = {
             {0, LENGTH1, PI / 2},
             {0, 0, -PI / 2},
@@ -22,15 +36,15 @@ namespace robot_tweezers
         /**
          * @brief Denavit Hartenberg transform for spherical wrist (Assumes offset value is zero in all cases)
          * 
-         * @param theta 
-         * @param length 
-         * @param alpha 
+         * @param theta     The z-rotation parameter
+         * @param length    The z-translation parameter
+         * @param alpha     The x-rotation parameter
          * @return Eigen::Matrix4f 
          */
         Eigen::Matrix4f denavitHartenbergTransform(float theta, float length, float alpha);
 
         /**
-         * @brief 
+         * @brief Updates the wrist dh table with the current joint variable state
          * 
          * @param theta 
          */
@@ -38,12 +52,35 @@ namespace robot_tweezers
         
         public:
 
+        /**
+         * @brief Construct a new Kinematic object
+         * 
+         * @param theta Joint variable initial state
+         */
         Kinematic(float theta[]);
 
+        /**
+         * @brief Direct kinematics for a 3-degree of freedom spherical wrist
+         * 
+         * @param theta Current joint variable state
+         * @return Eigen::Matrix4f 
+         */
         Eigen::Matrix4f directKinematics(float theta[]);
 
+        /**
+         * @brief Calculates the Jacobian matrix for a spherical wrist based on the current joint state
+         * 
+         * @param theta Current joint variable state
+         * @return Eigen::MatrixXf 
+         */
         Eigen::MatrixXf jacobian(float theta[]);
 
+        /**
+         * @brief Approximated as a sinusoidal torque acting on theta 2
+         * 
+         * @param theta Current joint variable state
+         * @return Eigen::Vector3f 
+         */
         Eigen::Vector3f gravityTorque(float theta[]);
     };
 }

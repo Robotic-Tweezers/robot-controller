@@ -1,23 +1,16 @@
 #include <coordinates.hpp>
 
-using namespace Eigen;
-using namespace robot_tweezers;
+RobotTweezers::Coordinates::Coordinates(void) { }
 
+RobotTweezers::Coordinates::Coordinates(const Eigen::Matrix3f& frame, Eigen::Vector3f& origin)
+: frame(frame), origin(origin) { }
 
-Coordinates::Coordinates() { }
-
-Coordinates::Coordinates(Matrix3f frame, Vector3f origin)
-{
-    this->frame = frame;
-    this->origin = origin;
-}
-
-Coordinates::Coordinates(Matrix4f coordinates)
+RobotTweezers::Coordinates::Coordinates(const Eigen::Matrix4f& coordinates)
 {
     setCoordinates(coordinates);
 }
 
-void Coordinates::setCoordinates(Matrix4f coordinates)
+void RobotTweezers::Coordinates::setCoordinates(const Eigen::Matrix4f& coordinates)
 {
     for (int i = 0; i < 3; i++)
     {
@@ -29,11 +22,27 @@ void Coordinates::setCoordinates(Matrix4f coordinates)
     }
 }
 
-Matrix4f Coordinates::getCoordinates()
+Eigen::Matrix4f RobotTweezers::Coordinates::getCoordinates(void)
 {
-    Matrix4f matrix;
+    Eigen::Matrix4f matrix;
     matrix << 
         frame, origin,
         0, 0, 0, 1;
     return matrix;
+}
+
+Eigen::Vector6f RobotTweezers::Coordinates::error(const Coordinates& a, const Coordinates& b)
+{
+    Eigen::Vector3f rotation_error(0, 0, 0);
+    if (!a.frame.transpose().isApprox(b.frame, 0.001))
+    {
+        Eigen::AngleAxisf rotation_error_angle_axis(a.frame.transpose() * b.frame);
+        rotation_error << rotation_error_angle_axis.angle() * rotation_error_angle_axis.axis();
+    }
+    
+    Eigen::Vector6f error;
+    error << 
+        a.origin - b.origin,
+        rotation_error;
+    return error;
 }

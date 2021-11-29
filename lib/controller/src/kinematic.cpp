@@ -1,36 +1,33 @@
 #include <kinematic.hpp>
 
-using namespace Eigen;
-using namespace robot_tweezers;
-
-Matrix4f Kinematic::denavitHartenbergTransform(float theta, float length, float alpha)
+Eigen::Matrix4f RobotTweezers::Kinematic::denavitHartenbergTransform(float theta, float length, float alpha)
 {
-    Matrix4f dh_transform;
+    Eigen::Matrix4f dh_transform;
     dh_transform <<
-        zRotation(theta) * xRotation(alpha), Vector3f(0, 0, length),
+        zRotation(theta) * xRotation(alpha), Eigen::Vector3f(0, 0, length),
         0, 0, 0, 1;
     return dh_transform;
 }
 
-void Kinematic::updateDHTable(float theta[])
+void RobotTweezers::Kinematic::updateDHTable(float theta[])
 {
     dh_table[0][0] = theta[0];
     dh_table[1][0] = theta[1];
     dh_table[2][0] = theta[2];
 }
 
-Kinematic::Kinematic(float theta[])
+RobotTweezers::Kinematic::Kinematic(float theta[])
 {
     updateDHTable(theta);
 }
 
-Matrix4f Kinematic::directKinematics(float theta[])
+Eigen::Matrix4f RobotTweezers::Kinematic::directKinematics(float theta[])
 {
-    Matrix4f end_effector;
+    Eigen::Matrix4f end_effector;
     origins[0] << 0, 0, 0;
     k_axes[0] << 0, 0, -1;
     end_effector << 
-        xRotation(PI), Vector3f(0, 0 ,0),
+        xRotation(PI), Eigen::Vector3f(0, 0 ,0),
         0, 0, 0, 1;
     
     updateDHTable(theta);
@@ -45,21 +42,24 @@ Matrix4f Kinematic::directKinematics(float theta[])
     return end_effector;
 }
 
-MatrixXf Kinematic::jacobian(float theta[])
+Eigen::MatrixXf RobotTweezers::Kinematic::jacobian(float theta[])
 {
-    MatrixXf jacobian_matrix(6, 3);
+    Eigen::MatrixXf jacobian_matrix(6, 3);
     for (int i = 0; i < 3; i++)
     {
-        /*
-        Vector3f angular_contrib = k_axes[i].cross3(origins[3] - origins[i]);
-        jacobian_matrix(0, i) = angular_contrib(0);
-        jacobian_matrix(1, i) = angular_contrib(1);
-        jacobian_matrix(2, i) = angular_contrib(2);
-        jacobian_matrix(3, i) = k_axes[i](0);
-        jacobian_matrix(4, i) = k_axes[i](1);
-        jacobian_matrix(5, i) = k_axes[i](2);
-        */
+        Eigen::Vector3f distance_to_end_eff = origins[3] - origins[i];
+        Eigen::Vector3f angular_contrib = skew3(k_axes[i]) * distance_to_end_eff;
+        jacobian_matrix.col(i) <<
+            angular_contrib,
+            k_axes[i];
     }
 
     return jacobian_matrix;
+}
+
+Eigen::Vector3f RobotTweezers::Kinematic::gravityTorque(float theta[])
+{
+    // Torque acting on theta 2 when theta 2 = pi / 2
+    const float max_gravity_torque = 0.05;
+    return Eigen::Vector3f(0, -max_gravity_torque * sinf(theta[1]), 0);
 }

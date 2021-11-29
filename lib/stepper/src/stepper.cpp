@@ -1,6 +1,17 @@
 #include <stepper.hpp>
 
-void robot_tweezers::Stepper::configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2)
+void RobotTweezers::Stepper::setResolution(resolution_e resolution)
+{
+    digitalWrite(microstep1, (int)resolution == 32 || (int)resolution == 16);
+    digitalWrite(microstep2, (int)resolution == 64 || (int)resolution == 16);
+}
+
+void RobotTweezers::Stepper::setDirection(bool positive)
+{
+    digitalWrite(this->direction, positive);
+}
+
+void RobotTweezers::Stepper::configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2)
 {
     this->step = step;
     this->direction = direction;
@@ -15,51 +26,75 @@ void robot_tweezers::Stepper::configureOutputPins(uint8_t step, uint8_t directio
     pinMode(microstep2, OUTPUT);
 }
 
-robot_tweezers::Stepper::Stepper() { }
+RobotTweezers::Stepper::Stepper() { }
 
-robot_tweezers::Stepper::Stepper(uint8_t step, uint8_t direction)
+RobotTweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t encoder_a, uint8_t encoder_b)
+ : encoder(encoder_a, encoder_b, 100)
 {
-    step_state = false;
-    direction_state = false;
-    resolution = MICROSTEP8;
     configureOutputPins(step, direction, 255, 255, 255);
     digitalWrite(step, LOW);
-    digitalWrite(direction, LOW);
+    digitalWrite(direction, HIGH);
 }
 
-robot_tweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t enable)
+RobotTweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t encoder_a, uint8_t encoder_b)
+ : encoder(encoder_a, encoder_b, 100)
 {
-    step_state = false;
-    direction_state = false;
-    resolution = MICROSTEP8;
     configureOutputPins(step, direction, enable, 255, 255);
     digitalWrite(step, LOW);
-    digitalWrite(direction, LOW);
+    digitalWrite(direction, HIGH);
     digitalWrite(enable, LOW);
 }
 
-robot_tweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2)
+RobotTweezers::Stepper::Stepper
+    (uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2, 
+    uint8_t encoder_a, uint8_t encoder_b) : encoder(encoder_a, encoder_b, 100)
 {
-    step_state = false;
-    direction_state = false;
-    resolution = MICROSTEP8;
     configureOutputPins(step, direction, enable, microstep1, microstep2);
     digitalWrite(step, LOW);
-    digitalWrite(direction, LOW);
+    digitalWrite(direction, HIGH);
     digitalWrite(enable, LOW);
     digitalWrite(microstep1, LOW);
     digitalWrite(microstep2, LOW);
 }
 
-void robot_tweezers::Stepper::stepMotor(void)
+void RobotTweezers::Stepper::setVelocity(float velocity)
 {
-    step_state = !step_state;
-    digitalWrite(step, step_state);
-}
+    if (velocity == 0.00)
+    {
+        // Hold position
+        digitalWrite(step, HIGH);
+        return;
+    }
 
-void robot_tweezers::Stepper::setResolution(resolution_e resolution)
-{
-    this->resolution = resolution;
-    digitalWrite(microstep2, (bool)((uint8_t)resolution >> 1));
-    digitalWrite(microstep2, (bool)resolution);
+    float frequency;
+    // Prioritize high resolution
+    if (abs(velocity) < MAX_VELOCITY(MICROSTEP64))
+    {
+        setResolution(MICROSTEP64);
+        frequency = FREQUENCY(MICROSTEP64, abs(velocity));
+    }
+    else if (abs(velocity) < MAX_VELOCITY(MICROSTEP32))
+    {
+        setResolution(MICROSTEP32);
+        frequency = FREQUENCY(MICROSTEP32, abs(velocity));
+    }
+    else if (abs(velocity) < MAX_VELOCITY(MICROSTEP16))
+    {
+        setResolution(MICROSTEP16);
+        frequency = FREQUENCY(MICROSTEP16, abs(velocity));
+    }
+    else if (abs(velocity) < MAX_VELOCITY(MICROSTEP8))
+    {
+        setResolution(MICROSTEP8);
+        frequency = FREQUENCY(MICROSTEP8, abs(velocity));
+    }
+    else
+    {
+        setResolution(MICROSTEP8);
+        frequency = MAX_FREQUENCY;
+    }
+
+    setDirection(velocity > 0);
+    analogWriteFrequency(step, frequency);
+    analogWrite(step, 128);
 }
