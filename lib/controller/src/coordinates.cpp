@@ -31,18 +31,18 @@ Eigen::Matrix4f RobotTweezers::Coordinates::getCoordinates(void)
     return matrix;
 }
 
-Eigen::Vector6f RobotTweezers::Coordinates::error(const Coordinates& a, const Coordinates& b)
+Eigen::Vector6f RobotTweezers::Coordinates::operator-(const Coordinates& op)
 {
     Eigen::Vector3f rotation_error(0, 0, 0);
-    if (!a.frame.transpose().isApprox(b.frame, 0.001))
+    if (!frame.transpose().isApprox(op.frame, 0.001))
     {
-        Eigen::AngleAxisf rotation_error_angle_axis(a.frame.transpose() * b.frame);
+        Eigen::AngleAxisf rotation_error_angle_axis(frame.transpose() * op.frame);
         rotation_error << rotation_error_angle_axis.angle() * rotation_error_angle_axis.axis();
     }
     
     Eigen::Vector6f error;
     error << 
-        a.origin - b.origin,
+        origin - op.origin,
         rotation_error;
     return error;
 }

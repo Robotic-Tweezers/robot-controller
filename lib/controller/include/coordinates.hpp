@@ -59,13 +59,12 @@ namespace RobotTweezers
         Eigen::Matrix4f getCoordinates(void);
 
         /**
-         * @brief Calculates the translational and rotational error as a 6 dimensional vector 
+         * @brief Calculates the translational and rotational error as a 6 dimensional vector
          * 
-         * @param a First coordinates 
-         * @param b Second coordinates 
+         * @param op Coordinates to subtract from object
          * @return Eigen::Vector6f 
          */
-        static Eigen::Vector6f error(const Coordinates& a, const Coordinates& b);
+        Eigen::Vector6f operator-(const Coordinates& op);
     };
 }
 

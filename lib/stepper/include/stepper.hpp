@@ -10,6 +10,11 @@
 #define MAX_VELOCITY(RESOLUTION)        ((float)(2 * PI * MAX_FREQUENCY / (200 * (RESOLUTION))))
 #define FREQUENCY(RESOLUTION, VELOCITY) ((float)(200 * (RESOLUTION) * (VELOCITY) / (2 * PI)))
 
+// Useful links
+// https://github.com/bigtreetech/BIGTREETECH-Stepper-Motor-Driver/blob/master/TMC2209/V1.1/manual/TMC2209-V1.1-manual.pdf
+// https://github.com/teemuatlut/TMCStepper
+// https://www.trinamic.com/fileadmin/assets/Products/ICs_Documents/TMC2209_Datasheet_V103.pdf
+
 namespace RobotTweezers
 {
     enum resolution_e
@@ -34,11 +39,10 @@ namespace RobotTweezers
 
         void setResolution(resolution_e resolution);
 
-        void configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2);
-
         public:
 
         Encoder encoder;
+        
         /****************************************
          * Step/Direction control
         *****************************************/
@@ -72,6 +76,14 @@ namespace RobotTweezers
          */
         Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2, 
             uint8_t encoder_a, uint8_t encoder_b);
+
+        void configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2);
+
+        void configureEncoder(uint8_t encoder_a, uint8_t encoder_b);
+        
+        void enableStepper(void);
+        
+        void disableStepper(void);
 
         /**
          * @brief 

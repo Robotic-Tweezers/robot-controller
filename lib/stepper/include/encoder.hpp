@@ -25,6 +25,8 @@ namespace RobotTweezers
 
         Encoder(uint8_t pin_a, uint8_t pin_b, unsigned int total_windows);
 
+        void configureInputPins(uint8_t pin_a, uint8_t pin_b);
+
         void pinInterruptA(void);
 
         void pinInterruptB(void);

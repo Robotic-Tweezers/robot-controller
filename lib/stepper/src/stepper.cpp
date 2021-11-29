@@ -11,21 +11,6 @@ void RobotTweezers::Stepper::setDirection(bool positive)
     digitalWrite(this->direction, positive);
 }
 
-void RobotTweezers::Stepper::configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2)
-{
-    this->step = step;
-    this->direction = direction;
-    this->enable = enable;
-    this->microstep1 = microstep1;
-    this->microstep2 = microstep2;
-    
-    pinMode(step, OUTPUT);
-    pinMode(direction, OUTPUT);
-    pinMode(enable, OUTPUT);
-    pinMode(microstep1, OUTPUT);
-    pinMode(microstep2, OUTPUT);
-}
-
 RobotTweezers::Stepper::Stepper() { }
 
 RobotTweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t encoder_a, uint8_t encoder_b)
@@ -55,6 +40,36 @@ RobotTweezers::Stepper::Stepper
     digitalWrite(enable, LOW);
     digitalWrite(microstep1, LOW);
     digitalWrite(microstep2, LOW);
+}
+
+void RobotTweezers::Stepper::configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2)
+{
+    this->step = step;
+    this->direction = direction;
+    this->enable = enable;
+    this->microstep1 = microstep1;
+    this->microstep2 = microstep2;
+    
+    pinMode(step, OUTPUT);
+    pinMode(direction, OUTPUT);
+    pinMode(enable, OUTPUT);
+    pinMode(microstep1, OUTPUT);
+    pinMode(microstep2, OUTPUT);
+}
+
+void RobotTweezers::Stepper::configureEncoder(uint8_t encoder_a, uint8_t encoder_b)
+{
+    encoder.configureInputPins(encoder_a, encoder_b);
+}
+
+void RobotTweezers::Stepper::enableStepper(void)
+{
+    digitalWrite(enable, LOW);
+}
+
+void RobotTweezers::Stepper::disableStepper(void)
+{
+    digitalWrite(enable, HIGH);
 }
 
 void RobotTweezers::Stepper::setVelocity(float velocity)

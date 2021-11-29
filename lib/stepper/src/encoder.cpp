@@ -17,6 +17,13 @@ RobotTweezers::Encoder::Encoder(uint8_t pin_a, uint8_t pin_b, unsigned int total
     initialState();
 }
 
+void RobotTweezers::Encoder::configureInputPins(uint8_t pin_a, uint8_t pin_b)
+{
+    this->pin_a = pin_a;
+    this->pin_b = pin_b;
+    initialState();
+} 
+
 void RobotTweezers::Encoder::pinInterruptA(void)
 {
     state_a = digitalRead(pin_a);
