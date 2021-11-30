@@ -7,19 +7,21 @@ RobotTweezers::Coordinates::Coordinates(const Eigen::Matrix3f& frame, Eigen::Vec
 
 RobotTweezers::Coordinates::Coordinates(const Eigen::Matrix4f& coordinates)
 {
-    setCoordinates(coordinates);
+    *this = coordinates;
 }
 
-void RobotTweezers::Coordinates::setCoordinates(const Eigen::Matrix4f& coordinates)
+RobotTweezers::Coordinates& RobotTweezers::Coordinates::operator=(const RobotTweezers::Coordinates& op)
 {
-    for (int i = 0; i < 3; i++)
-    {
-        this->origin(i) = coordinates(i, 3);
-        for (int j = 0; j < 3; j++)
-        {
-            this->frame(i, j) = coordinates(i, j);
-        }
-    }
+    frame = op.frame;
+    origin = op.origin;
+    return *this;
+}
+
+RobotTweezers::Coordinates& RobotTweezers::Coordinates::operator=(const Eigen::Matrix4f& op)
+{
+    frame = op.block<3, 3>(0, 0);
+    origin = op.block<3, 1>(0, 3);
+    return *this;
 }
 
 Eigen::Matrix4f RobotTweezers::Coordinates::getCoordinates(void)

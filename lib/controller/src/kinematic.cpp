@@ -9,7 +9,7 @@ Eigen::Matrix4f RobotTweezers::Kinematic::denavitHartenbergTransform(float theta
     return dh_transform;
 }
 
-void RobotTweezers::Kinematic::updateDHTable(float theta[])
+void RobotTweezers::Kinematic::updateDHTable(const float theta[])
 {
     dh_table[0][0] = theta[0];
     dh_table[1][0] = theta[1];
@@ -21,7 +21,7 @@ RobotTweezers::Kinematic::Kinematic(float theta[])
     updateDHTable(theta);
 }
 
-Eigen::Matrix4f RobotTweezers::Kinematic::directKinematics(float theta[])
+Eigen::Matrix4f RobotTweezers::Kinematic::directKinematics(const float theta[])
 {
     Eigen::Matrix4f end_effector;
     origins[0] << 0, 0, 0;

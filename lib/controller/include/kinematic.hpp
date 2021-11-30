@@ -48,7 +48,7 @@ namespace RobotTweezers
          * 
          * @param theta 
          */
-        inline void updateDHTable(float theta[]);
+        inline void updateDHTable(const float theta[]);
         
         public:
 
@@ -65,7 +65,7 @@ namespace RobotTweezers
          * @param theta Current joint variable state
          * @return Eigen::Matrix4f 
          */
-        Eigen::Matrix4f directKinematics(float theta[]);
+        Eigen::Matrix4f directKinematics(const float theta[]);
 
         /**
          * @brief Calculates the Jacobian matrix for a spherical wrist based on the current joint state

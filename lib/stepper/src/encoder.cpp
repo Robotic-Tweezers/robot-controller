@@ -11,8 +11,8 @@ RobotTweezers::Encoder::Encoder(void) : pin_a(255), pin_b(255), window_count(0),
     initialState();
 }
 
-RobotTweezers::Encoder::Encoder(uint8_t pin_a, uint8_t pin_b, unsigned int total_windows)
- : pin_a(pin_a), pin_b(pin_b), window_count(0), total_windows(total_windows)
+RobotTweezers::Encoder::Encoder(uint8_t index, uint8_t pin_a, uint8_t pin_b, unsigned int total_windows)
+ : index(index), pin_a(pin_a), pin_b(pin_b), window_count(0), total_windows(total_windows)
 {
     initialState();
 }
@@ -26,6 +26,7 @@ void RobotTweezers::Encoder::configureInputPins(uint8_t pin_a, uint8_t pin_b)
 
 void RobotTweezers::Encoder::pinInterruptA(void)
 {
+    Serial.println(index);
     state_a = digitalRead(pin_a);
     window_count += state_a == state_b ? 1 : -1;
 }

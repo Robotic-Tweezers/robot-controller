@@ -7,10 +7,8 @@
 
 namespace RobotTweezers
 {
-    class Coordinates
+    struct Coordinates
     {
-        public:
-
         /**
          * @brief The coordinate frame, represents the coordinates orientation
          * 
@@ -45,11 +43,18 @@ namespace RobotTweezers
         Coordinates(const Eigen::Matrix4f& coordinates);
 
         /**
+         * @brief Sets the frame and origin to another coordinate system
+         * 
+         * @param op Original Coordinates 
+         */
+        Coordinates& operator=(const Coordinates& op);
+
+        /**
          * @brief Sets the frame and origin represented in the 4x4 coordinate matrix
          * 
-         * @param coordinates A 4x4 matrix representing the frame and origin
+         * @param op A 4x4 matrix representing the frame and origin
          */
-        void setCoordinates(const Eigen::Matrix4f& coordinates);
+        Coordinates& operator=(const Eigen::Matrix4f& op);
 
         /**
          * @brief Get the Coordinates as a 4x4 matrix

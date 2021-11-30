@@ -13,16 +13,16 @@ void RobotTweezers::Stepper::setDirection(bool positive)
 
 RobotTweezers::Stepper::Stepper() { }
 
-RobotTweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t encoder_a, uint8_t encoder_b)
- : encoder(encoder_a, encoder_b, 100)
+RobotTweezers::Stepper::Stepper(uint8_t index, uint8_t step, uint8_t direction, uint8_t encoder_a, uint8_t encoder_b)
+: index(index), encoder(index, encoder_a, encoder_b, 100)
 {
     configureOutputPins(step, direction, 255, 255, 255);
     digitalWrite(step, LOW);
     digitalWrite(direction, HIGH);
 }
 
-RobotTweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t encoder_a, uint8_t encoder_b)
- : encoder(encoder_a, encoder_b, 100)
+RobotTweezers::Stepper::Stepper(uint8_t index, uint8_t step, uint8_t direction, uint8_t enable, uint8_t encoder_a, uint8_t encoder_b)
+: index(index), encoder(index, encoder_a, encoder_b, 100)
 {
     configureOutputPins(step, direction, enable, 255, 255);
     digitalWrite(step, LOW);
@@ -31,8 +31,8 @@ RobotTweezers::Stepper::Stepper(uint8_t step, uint8_t direction, uint8_t enable,
 }
 
 RobotTweezers::Stepper::Stepper
-    (uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2, 
-    uint8_t encoder_a, uint8_t encoder_b) : encoder(encoder_a, encoder_b, 100)
+    (uint8_t index, uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2, 
+    uint8_t encoder_a, uint8_t encoder_b) : index(index), encoder(index, encoder_a, encoder_b, 100)
 {
     configureOutputPins(step, direction, enable, microstep1, microstep2);
     digitalWrite(step, LOW);
@@ -55,6 +55,8 @@ void RobotTweezers::Stepper::configureOutputPins(uint8_t step, uint8_t direction
     pinMode(enable, OUTPUT);
     pinMode(microstep1, OUTPUT);
     pinMode(microstep2, OUTPUT);
+    
+    analogWrite(step, 128);
 }
 
 void RobotTweezers::Stepper::configureEncoder(uint8_t encoder_a, uint8_t encoder_b)
@@ -82,26 +84,27 @@ void RobotTweezers::Stepper::setVelocity(float velocity)
     }
 
     float frequency;
+    float velocity_abs = abs(velocity);
     // Prioritize high resolution
-    if (abs(velocity) < MAX_VELOCITY(MICROSTEP64))
+    if (velocity_abs < MAX_VELOCITY(MICROSTEP64))
     {
         setResolution(MICROSTEP64);
-        frequency = FREQUENCY(MICROSTEP64, abs(velocity));
+        frequency = FREQUENCY(MICROSTEP64, velocity_abs);
     }
-    else if (abs(velocity) < MAX_VELOCITY(MICROSTEP32))
+    else if (velocity_abs < MAX_VELOCITY(MICROSTEP32))
     {
         setResolution(MICROSTEP32);
-        frequency = FREQUENCY(MICROSTEP32, abs(velocity));
+        frequency = FREQUENCY(MICROSTEP32, velocity_abs);
     }
-    else if (abs(velocity) < MAX_VELOCITY(MICROSTEP16))
+    else if (velocity_abs < MAX_VELOCITY(MICROSTEP16))
     {
         setResolution(MICROSTEP16);
-        frequency = FREQUENCY(MICROSTEP16, abs(velocity));
+        frequency = FREQUENCY(MICROSTEP16, velocity_abs);
     }
-    else if (abs(velocity) < MAX_VELOCITY(MICROSTEP8))
+    else if (velocity_abs < MAX_VELOCITY(MICROSTEP8))
     {
         setResolution(MICROSTEP8);
-        frequency = FREQUENCY(MICROSTEP8, abs(velocity));
+        frequency = FREQUENCY(MICROSTEP8, velocity_abs);
     }
     else
     {
@@ -111,5 +114,4 @@ void RobotTweezers::Stepper::setVelocity(float velocity)
 
     setDirection(velocity > 0);
     analogWriteFrequency(step, frequency);
-    analogWrite(step, 128);
 }

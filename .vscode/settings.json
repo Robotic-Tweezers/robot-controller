@@ -46,6 +46,7 @@
         "sstream": "cpp",
         "stdexcept": "cpp",
         "streambuf": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "random": "cpp"
     }
 }

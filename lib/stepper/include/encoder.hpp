@@ -10,6 +10,7 @@ namespace RobotTweezers
     {
         private:
 
+        uint8_t index;
         uint8_t pin_a;
         uint8_t pin_b;
         long window_count;
@@ -23,7 +24,7 @@ namespace RobotTweezers
 
         Encoder(void);
 
-        Encoder(uint8_t pin_a, uint8_t pin_b, unsigned int total_windows);
+        Encoder(uint8_t index, uint8_t pin_a, uint8_t pin_b, unsigned int total_windows);
 
         void configureInputPins(uint8_t pin_a, uint8_t pin_b);
 

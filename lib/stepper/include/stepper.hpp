@@ -29,6 +29,7 @@ namespace RobotTweezers
     {
         private:
 
+        uint8_t index;
         uint8_t step;
         uint8_t direction;
         uint8_t enable;
@@ -42,7 +43,7 @@ namespace RobotTweezers
         public:
 
         Encoder encoder;
-        
+
         /****************************************
          * Step/Direction control
         *****************************************/
@@ -58,7 +59,7 @@ namespace RobotTweezers
          * @param step 
          * @param direction 
          */
-        Stepper(uint8_t step, uint8_t direction, uint8_t encoder_a, uint8_t encoder_b);
+        Stepper(uint8_t index, uint8_t step, uint8_t direction, uint8_t encoder_a, uint8_t encoder_b);
 
         /**
          * @brief Construct a new Stepper object, uses step, direction and enable
@@ -66,7 +67,7 @@ namespace RobotTweezers
          * @param step 
          * @param direction 
          */
-        Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t encoder_a, uint8_t encoder_b);
+        Stepper(uint8_t index, uint8_t step, uint8_t direction, uint8_t enable, uint8_t encoder_a, uint8_t encoder_b);
 
         /**
          * @brief Construct a new Stepper object
@@ -74,7 +75,7 @@ namespace RobotTweezers
          * @param step 
          * @param direction 
          */
-        Stepper(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2, 
+        Stepper(uint8_t index, uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2, 
             uint8_t encoder_a, uint8_t encoder_b);
 
         void configureOutputPins(uint8_t step, uint8_t direction, uint8_t enable, uint8_t microstep1, uint8_t microstep2);

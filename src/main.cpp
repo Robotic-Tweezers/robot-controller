@@ -20,9 +20,9 @@ const Matrix6f kv = vectorToDiagnol6((float[]){0.1, 0.5, 0.1, 0.1, 0.5, 0.1});
 volatile float desired_position;
 Stepper steppers[STEPPERS] = 
 {
-    Stepper(11, 12, 10, 9, 8, 22, 23),
-    Stepper(3, 4, 5, 6, 7, 12, 21),         // Not used yet
-    Stepper(14, 15, 16, 17, 18, 19, 20),    // Not used yet
+    Stepper(0, 11, 12, 10, 9, 8, 22, 23),
+    Stepper(1, 3, 4, 5, 6, 7, 12, 21),         // Not used yet
+    Stepper(2, 14, 15, 16, 17, 18, 19, 20),    // Not used yet
 };
 
 // Cannot use local variables to initialize interrupts (so no loop here)
@@ -64,12 +64,12 @@ static void getDesiredState(Coordinates& position, Vector6f& velocity, float int
     static Coordinates previous_position;
 
     // Hard coded setpoint
-    position.frame = xRotation(PI) * zRotation(-PI / 2);
+    position.frame = xRotation(PI) * zRotation(PI / 2);
 }
 
 static void controlLoop(void* arg)
 {
-    const unsigned int loop_period = 200; // ms
+    const unsigned int loop_period = 1000; // ms
     float theta[3] = {0, 0, 0};
     Vector3f theta_dot, gravity_torque, applied_torque;
     Kinematic wrist_kinematics(theta);
@@ -87,7 +87,12 @@ static void controlLoop(void* arg)
         gravity_torque = wrist_kinematics.gravityTorque(theta);
 
         // Direct kinematics of joint state (calculate end effector position)
-        actual_position.setCoordinates(wrist_kinematics.directKinematics(theta));
+        actual_position = wrist_kinematics.directKinematics(theta);
+
+        char buffer[128];
+        sprintf (buffer, "Theta = {%f, %f, %f}", theta[0], theta[1], theta[2]);
+        Serial.println(buffer);
+        print(actual_position.frame);
 
         // Calculate position and velocity error
         position_error = position - actual_position;
