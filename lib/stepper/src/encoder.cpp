@@ -26,7 +26,6 @@ void RobotTweezers::Encoder::configureInputPins(uint8_t pin_a, uint8_t pin_b)
 
 void RobotTweezers::Encoder::pinInterruptA(void)
 {
-    Serial.println(index);
     state_a = digitalRead(pin_a);
     window_count += state_a == state_b ? 1 : -1;
 }

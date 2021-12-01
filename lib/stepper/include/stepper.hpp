@@ -6,7 +6,7 @@
 #include <encoder.hpp>
 
 // Could be higher?
-#define MAX_FREQUENCY                   (4000) // Hz
+#define MAX_FREQUENCY                   (5000) // Hz
 #define MAX_VELOCITY(RESOLUTION)        ((float)(2 * PI * MAX_FREQUENCY / (200 * (RESOLUTION))))
 #define FREQUENCY(RESOLUTION, VELOCITY) ((float)(200 * (RESOLUTION) * (VELOCITY) / (2 * PI)))
 

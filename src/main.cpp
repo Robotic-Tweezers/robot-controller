@@ -8,7 +8,7 @@
 
 #define TIME_IN_MS(TIME)    ((TIME) * configTICK_RATE_HZ / 1000UL)
 #define TIME_IN_US(TIME)    ((TIME) * configTICK_RATE_HZ / 1000000UL)
-#define STEPPERS            (3)
+#define STEPPERS            (1)
 
 using namespace Eigen;
 using namespace RobotTweezers;
@@ -21,8 +21,8 @@ volatile float desired_position;
 Stepper steppers[STEPPERS] = 
 {
     Stepper(0, 11, 12, 10, 9, 8, 22, 23),
-    Stepper(1, 3, 4, 5, 6, 7, 12, 21),         // Not used yet
-    Stepper(2, 14, 15, 16, 17, 18, 19, 20),    // Not used yet
+    // Stepper(1, 3, 4, 5, 6, 7, 12, 21),           // Not used yet
+    // Stepper(2, 14, 15, 16, 17, 18, 19, 20),    // Not used yet
 };
 
 // Cannot use local variables to initialize interrupts (so no loop here)
@@ -45,8 +45,8 @@ static inline void configureStepperInterrupts(void)
     })
     
     REGISTER_ENCODER_INTERRUPTS(0);
-    REGISTER_ENCODER_INTERRUPTS(1);
-    REGISTER_ENCODER_INTERRUPTS(2);
+    // REGISTER_ENCODER_INTERRUPTS(1);
+    // REGISTER_ENCODER_INTERRUPTS(2);
 }
 
 static void readJointState(float theta[], Vector3f& theta_dot, float interval)
@@ -88,11 +88,6 @@ static void controlLoop(void* arg)
 
         // Direct kinematics of joint state (calculate end effector position)
         actual_position = wrist_kinematics.directKinematics(theta);
-
-        char buffer[128];
-        sprintf (buffer, "Theta = {%f, %f, %f}", theta[0], theta[1], theta[2]);
-        Serial.println(buffer);
-        print(actual_position.frame);
 
         // Calculate position and velocity error
         position_error = position - actual_position;
@@ -152,7 +147,7 @@ void setup()
     configureStepperInterrupts();
 
     status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
+    // status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
     
     if (status != pdPASS)
     {

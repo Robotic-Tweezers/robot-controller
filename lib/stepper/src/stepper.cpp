@@ -55,8 +55,6 @@ void RobotTweezers::Stepper::configureOutputPins(uint8_t step, uint8_t direction
     pinMode(enable, OUTPUT);
     pinMode(microstep1, OUTPUT);
     pinMode(microstep2, OUTPUT);
-    
-    analogWrite(step, 128);
 }
 
 void RobotTweezers::Stepper::configureEncoder(uint8_t encoder_a, uint8_t encoder_b)
@@ -76,13 +74,6 @@ void RobotTweezers::Stepper::disableStepper(void)
 
 void RobotTweezers::Stepper::setVelocity(float velocity)
 {
-    if (velocity == 0.00)
-    {
-        // Hold position
-        digitalWrite(step, HIGH);
-        return;
-    }
-
     float frequency;
     float velocity_abs = abs(velocity);
     // Prioritize high resolution
@@ -114,4 +105,5 @@ void RobotTweezers::Stepper::setVelocity(float velocity)
 
     setDirection(velocity > 0);
     analogWriteFrequency(step, frequency);
+    analogWrite(step, 128);
 }
