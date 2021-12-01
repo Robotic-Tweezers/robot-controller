@@ -125,6 +125,65 @@ static void pollSerial(void* arg)
     }
 }
 
+void swuart_calcCRC(uint8_t* datagram, uint8_t datagramLength)
+{
+    uint8_t* crc = datagram + (datagramLength-1); // CRC located in last byte of message
+    uint8_t currentByte;
+
+    *crc = 0;
+    // Execute for all bytes of a message
+    for (uint8_t i = 0; i < (datagramLength - 1); i++)
+    {
+        currentByte = datagram[i]; // Retrieve a byte to be sent from Array
+        for (uint8_t j = 0; j < 8; j++)
+        {
+            if ((*crc >> 7) ^ (currentByte & 0x01)) // update CRC based result of XOR operation
+            {
+                *crc = (*crc << 1) ^ 0x07;
+            }
+            else
+            {
+                *crc = (*crc << 1);
+            }
+
+            currentByte = currentByte >> 1;
+        } // for CRC bit
+    } // for message byte
+}
+
+static void stepperUartTesting(void* arg)
+{
+    uint8_t step = 11;
+    uint8_t direction = 12;
+    uint8_t enable = 10;
+    uint8_t microstep1 = 9;
+    uint8_t microstep2 = 8;
+    uint8_t buffer[8] = {0xA0, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};
+    char read_buffer[8];
+    swuart_calcCRC(buffer, 8);
+
+    digitalWrite(step, LOW);
+    digitalWrite(direction, LOW);
+    digitalWrite(enable, LOW);
+    digitalWrite(microstep1, LOW);
+    digitalWrite(microstep2, LOW);
+    while (true)
+    {
+        Serial1.write(buffer, 8);
+        if (Serial1.available() > 0)
+        {
+            Serial1.readBytes(read_buffer, 8);
+            sprintf(read_buffer, "%x%x%x%x%x%x%x%x", 
+                read_buffer[0], read_buffer[1], read_buffer[2], read_buffer[3], 
+                read_buffer[4], read_buffer[5], read_buffer[6], read_buffer[7]);
+            Serial.println(read_buffer);
+            Serial1.clear();
+        }
+
+        vTaskDelay(TIME_IN_MS(100));
+    }
+}
+
 void setup()
 {
     portBASE_TYPE status = pdPASS;
@@ -141,13 +200,15 @@ void setup()
     };
 
     Serial.begin(9600);
+    Serial1.begin(9600);
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
 
-    configureStepperInterrupts();
+    // configureStepperInterrupts();
 
-    status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    // status &= xTaskCreate(pollSerial, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     // status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
+    status &= xTaskCreate(stepperUartTesting, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 1, NULL);
     
     if (status != pdPASS)
     {
