@@ -14,7 +14,7 @@
 #define TOFF_VALUE 4        // [1... 15]
 #define ENABLE_PIN 2        // Enable pin
 #define THETA1_ADDRESS 0b00 // TMC2209 Driver address according to MS1 and MS2
-#define THETA2_ADDRESS 0b01 // TMC2209 Driver address according to MS1 and MS2
+#define THETA2_ADDRESS 0b00 // TMC2209 Driver address according to MS1 and MS2
 #define THETA3_ADDRESS 0b10 // TMC2209 Driver address according to MS1 and MS2
 #define ADDRESS(STEPPER)    (int8_t)((STEPPER).ms2()) << 1 | (int8_t)((STEPPER).ms1())
 // Match to your driver
@@ -46,12 +46,12 @@ static bool stepperInit(TMC2209Stepper& stepper)
     stepper.begin();
     stepper.toff(TOFF_VALUE);
     // Set velocity
-    stepper.VACTUAL(-5000);
+    stepper.VACTUAL(0);
     /// @TODO Figure out what these do
     stepper.blank_time(24);
     stepper.rms_current(400);
     // Set microstep resolution
-    stepper.microsteps(16);
+    stepper.microsteps(64);
     /// @TODO Figure out what these do
     stepper.TCOOLTHRS(0xFFFFF);
     stepper.semin(5);
@@ -74,6 +74,40 @@ static bool stepperInit(TMC2209Stepper& stepper)
     return true;
 }
 
+static void serialEvent(void* arg)
+{
+    float vel = 2000;
+    while (true)
+    {
+        if (Serial.available())
+        {
+            switch (Serial.read())
+            {
+            case '+':
+                Serial.println("Move forward");
+                steppers[0].VACTUAL(3000);
+                steppers[1].VACTUAL(3000);
+                break;
+            case '-':
+                Serial.println("Move backward");
+                steppers[0].VACTUAL(-3000);
+                steppers[1].VACTUAL(-3000);
+                break;
+            case '0':
+                Serial.println("Stop");
+                steppers[0].VACTUAL(0);
+                steppers[1].VACTUAL(0);
+                break;
+            default:
+                break;
+            }
+            
+            Serial.clear();
+        }
+
+        vTaskDelay(TIME_IN_MS(100));
+    }
+}
 /*
 static void readJointState(float theta[], Vector3f &theta_dot, float interval)
 {
@@ -272,6 +306,7 @@ void setup()
 
     // status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
     // status &= xTaskCreate(stepperUartTesting, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 1, NULL);
+    status &= xTaskCreate(serialEvent, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 1, NULL);
 
     if (status != pdPASS)
     {
