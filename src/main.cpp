@@ -2,10 +2,10 @@
 #include <ArduinoJson.h>
 #include <TimeLib.h>
 #include <FreeRTOS_TEENSY4.h>
-#include <TMCStepper.h>
 #include <config.hpp>
 #include <kinematic.hpp>
 #include <coordinates.hpp>
+#include <stepper.hpp>
 
 #define TIME_IN_MS(TIME) (TIME) * configTICK_RATE_HZ / 1000UL
 #define TIME_IN_US(TIME) (TIME) * configTICK_RATE_HZ / 1000000UL
@@ -22,6 +22,20 @@ time_t rtc_time;
 const Matrix6f kp = vectorToDiagnol6((float[]){0, 0, 0, 1.00, 1.00, 1.00});
 const Matrix6f kv = vectorToDiagnol6((float[]){0.1, 0.5, 0.1, 0.1, 0.5, 0.1});
 volatile float desired_position;
+Stepper* steppers[3];
+
+Stepper* createStepperMotor(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction)
+{
+    Stepper* stepper = new Stepper(serial, address, step, direction);
+    if (stepper->uart.test_connection() != 0)
+    {
+        return stepper;
+    }
+
+    uint32_t gconf_data = 0x0000;
+    stepper->uart.GCONF(gconf_data);
+    return stepper;
+}
 
 void controlLoop(void *arg)
 {
