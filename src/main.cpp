@@ -102,10 +102,6 @@ void setup()
 
     Serial.begin(9600);
     Serial1.begin(460800);
-    for (uint8_t i = 0; i < STEPPERS; i++)
-    {
-        steppers[i] = createStepper(&Serial1, i);
-    }
 
     // Enable steppers
     pinMode(ENABLE_PIN, OUTPUT);
