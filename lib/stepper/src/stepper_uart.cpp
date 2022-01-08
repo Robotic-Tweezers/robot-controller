@@ -1,14 +1,55 @@
 #include <stepper_uart.hpp>
 
-#define UART_READ (uint8_t)0x00
-#define UART_WRITE (uint8_t)0x80
-#define SYNC (uint8_t)0x05
+#define UART_READ 0x00
+#define UART_WRITE 0x80
+#define SYNC 0x05
+
+typedef union uart_write_s
+{
+    uint8_t bytes[8];
+    struct
+    {
+        uint8_t sync;
+        uint8_t slave_address;
+        uint8_t register_address;
+        uint8_t data[4];
+        uint8_t crc;
+    } datagram;
+} uart_write_s;
+
+typedef union uart_request_s
+{
+    uint8_t bytes[4];
+    struct
+    {
+        uint8_t sync;
+        uint8_t slave_address;
+        uint8_t register_address;
+        uint8_t crc;
+    } datagram;
+} uart_request_s;
+
+typedef union uart_read_s
+{
+    uint8_t bytes[8];
+    struct
+    {
+        uint8_t sync;
+        uint8_t slave_address;
+        uint8_t register_address;
+        uint8_t data[4];
+        uint8_t crc;
+    } datagram;
+} uart_read_s;
 
 RobotTweezers::StepperUart::StepperUart()
     : serial(nullptr), slave_address(0xFF) {}
 
 RobotTweezers::StepperUart::StepperUart(Stream *serial, uint8_t slave_address)
-    : serial(serial), slave_address(slave_address) {}
+    : serial(serial), slave_address(slave_address)
+{
+    read_delay = 10000 / 115200;
+}
 
 uint8_t RobotTweezers::StepperUart::calculateCRC(const uint8_t datagram[], uint8_t datagramLength)
 {
@@ -62,6 +103,7 @@ bool RobotTweezers::StepperUart::read(uint8_t address, uint8_t data[])
 
     serial->flush();
     readRequest(address);
+    // Could work at 1 ms delay, need oscilliscope to figure out
     delay(2);
     while (serial->available() > 0)
     {
