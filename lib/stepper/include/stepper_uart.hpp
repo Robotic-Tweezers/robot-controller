@@ -6,60 +6,71 @@
 
 namespace RobotTweezers
 {
-    typedef union uart_write_s
-    {
-        uint8_t bytes[8];
-        struct
-        {
-            uint8_t sync;
-            uint8_t slave_address;
-            uint8_t register_address;
-            uint8_t data[4];
-            uint8_t crc;
-        } datagram;
-    } uart_write_s;
-
-    typedef union uart_request_s
-    {
-        uint8_t bytes[4];
-        struct 
-        {
-            uint8_t sync;
-            uint8_t slave_address;
-            uint8_t register_address;
-            uint8_t crc;
-        } datagram;
-    } uart_request_s;
-
-    typedef union uart_read_s
-    {
-        uint8_t bytes[8];
-        struct
-        {
-            uint8_t sync;
-            uint8_t slave_address;
-            uint8_t register_address;
-            uint8_t data[4];
-            uint8_t crc;
-        } datagram;
-    } uart_read_s;
-
     class StepperUart 
     {
         private:
 
         uint8_t slave_address;
+        uint32_t baud;
+        uint32_t read_delay;
         Stream* serial;
 
+        /**
+         * @brief Function to calculate the TMC2209 checksum
+         * 
+         * https://www.trinamic.com/fileadmin/assets/Products/ICs_Documents/TMC2209_Datasheet_V103.pdf
+         * 
+         * @param datagram          The UART transfer buffer
+         * @param datagramLength    Length of buffer
+         * @return uint8_t          Checksum byte
+         */
         uint8_t calculateCRC(const uint8_t datagram[], uint8_t datagramLength);
+
+        /**
+         * @brief Clear read buffer after writing to the TMC2209 (single wire interface)
+         * 
+         */
         void flushReadBuffer(void);
+
+        /**
+         * @brief Send a read request signal to a TMC2209
+         * 
+         * @param address       The register address 
+         */
         void readRequest(uint8_t address);
 
-        public: 
+        public:
 
+        /**
+         * @brief Construct a new Stepper Uart object
+         * 
+         */
         StepperUart();
+
+        /**
+         * @brief Construct a new Stepper Uart object
+         * 
+         * @param serial        The Arduino Stream object used for UART transfers
+         * @param slave_address The TMC2209 UART address 
+         */
         StepperUart(Stream* serial, uint8_t slave_address);
+
+        /**
+         * @brief Read a TMC2209 register
+         * 
+         * @param address       The register address
+         * @param data          Data array returned from driver
+         * @return true         Read was successful (CRC matches)
+         * @return false        Read failed
+         */
         bool read(uint8_t address, uint8_t data[]);
+
+        /**
+         * @brief Write to a TMC2209 register
+         * 
+         * @param address       The register address
+         * @param data          Data array returned from driver
+         */
         void write(uint8_t address, uint8_t data[]);
     };
 }
