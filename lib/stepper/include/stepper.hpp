@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include <stepper_uart.hpp>
 
 // Useful links
 // https://github.com/bigtreetech/BIGTREETECH-Stepper-Motor-Driver/blob/master/TMC2209/V1.1/manual/TMC2209-V1.1-manual.pdf
@@ -15,21 +16,15 @@ namespace RobotTweezers
     {
         private:
         
-        uint8_t slave_address;
         uint8_t step;
         uint8_t direction;
         uint8_t enable;
-        Stream* serial;
-
-        uint8_t calculateCRC(const uint8_t *datagram, uint8_t datagramLength);
-        void flushReadBuffer(void);
-        bool read(uint8_t address, uint8_t* data);
-        void write(uint8_t address);
+        StepperUart uart;
 
         public:
 
         /****************************************
-         * Step/Direction control
+         * Step/Direction + UART control
         *****************************************/
         /**
          * @brief Construct a new Stepper object, not initialized
