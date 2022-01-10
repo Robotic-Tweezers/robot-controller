@@ -10,10 +10,10 @@ namespace RobotTweezers
     {
         private:
 
+        Stream* serial;
         uint8_t slave_address;
         uint32_t baud;
         uint32_t read_delay;
-        Stream* serial;
 
         /**
          * @brief Function to calculate the TMC2209 checksum
