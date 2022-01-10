@@ -7,7 +7,7 @@
 typedef union uart_write_s
 {
     uint8_t bytes[8];
-    struct
+    struct datagram
     {
         uint8_t sync;
         uint8_t slave_address;
@@ -20,7 +20,7 @@ typedef union uart_write_s
 typedef union uart_request_s
 {
     uint8_t bytes[4];
-    struct
+    struct datagram
     {
         uint8_t sync;
         uint8_t slave_address;
@@ -32,7 +32,7 @@ typedef union uart_request_s
 typedef union uart_read_s
 {
     uint8_t bytes[8];
-    struct
+    struct datagram
     {
         uint8_t sync;
         uint8_t slave_address;
