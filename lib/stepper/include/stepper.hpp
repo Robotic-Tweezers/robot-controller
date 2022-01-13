@@ -10,6 +10,16 @@
 // https://github.com/teemuatlut/TMCStepper
 // https://www.trinamic.com/fileadmin/assets/Products/ICs_Documents/TMC2209_Datasheet_V103.pdf
 
+// General Configuration Registers
+#define GLOBAL_CONFIG_REG 0x00
+#define GLOBAL_STATUS_REG 0x01
+#define INTERFACE_TRANS_COUNT_REG 0x02
+#define SLAVE_CONFIG_REG 0x03
+#define OTP_PROGRAM_REG 0x04
+#define OTP_READ_REG 0x05
+#define IO_INPUT_STATE_REG 0x06
+#define FACTORY_CONFIG_REG 0x07
+
 namespace RobotTweezers
 {
     /**
@@ -26,7 +36,7 @@ namespace RobotTweezers
 
         public:
 
-        TMC2209Stepper uart;
+        TMC2209Stepper* uart;
 
         /**
          * @brief Construct a new Stepper object, not initialized
@@ -35,6 +45,8 @@ namespace RobotTweezers
         Stepper();
 
         Stepper(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction);
+
+        ~Stepper();
 
         bool initialize(void);
 

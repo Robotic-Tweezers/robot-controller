@@ -27,13 +27,13 @@ Stepper* steppers[3];
 Stepper* createStepperMotor(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction)
 {
     Stepper* stepper = new Stepper(serial, address, step, direction);
-    if (stepper->uart.test_connection() != 0)
+    if (stepper->uart->test_connection() != 0)
     {
         return stepper;
     }
 
     uint32_t gconf_data = 0x0000;
-    stepper->uart.GCONF(gconf_data);
+    stepper->uart->GCONF(gconf_data);
     return stepper;
 }
 
