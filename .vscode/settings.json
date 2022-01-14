@@ -47,6 +47,10 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "thread": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "forward_list": "cpp",
+        "unordered_set": "cpp",
+        "string_view": "cpp",
+        "valarray": "cpp"
     }
 }

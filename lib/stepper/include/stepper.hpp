@@ -1,24 +1,14 @@
 #ifndef _STEPPER_HPP_
 #define _STEPPER_HPP_
 
-#include <Arduino.h>
 #include <stdint.h>
+#include <FreeRTOS_TEENSY4.h>
 #include <TMCStepper.h>
 
 // Useful links
 // https://github.com/bigtreetech/BIGTREETECH-Stepper-Motor-Driver/blob/master/TMC2209/V1.1/manual/TMC2209-V1.1-manual.pdf
 // https://github.com/teemuatlut/TMCStepper
 // https://www.trinamic.com/fileadmin/assets/Products/ICs_Documents/TMC2209_Datasheet_V103.pdf
-
-// General Configuration Registers
-#define GLOBAL_CONFIG_REG 0x00
-#define GLOBAL_STATUS_REG 0x01
-#define INTERFACE_TRANS_COUNT_REG 0x02
-#define SLAVE_CONFIG_REG 0x03
-#define OTP_PROGRAM_REG 0x04
-#define OTP_READ_REG 0x05
-#define IO_INPUT_STATE_REG 0x06
-#define FACTORY_CONFIG_REG 0x07
 
 namespace RobotTweezers
 {
@@ -32,7 +22,9 @@ namespace RobotTweezers
 
         uint8_t step;
         uint8_t direction;
-
+        uint32_t period;
+        uint32_t position;
+        static uint8_t enable;
 
         public:
 
@@ -46,11 +38,17 @@ namespace RobotTweezers
 
         Stepper(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction);
 
-        ~Stepper();
-
         bool initialize(void);
 
         uint8_t address(void);
+
+        static void stepMotor(void *arg);
+
+        static void setEnablePin(uint8_t enable);
+
+        static void enableSteppers(void);
+
+        static void disableSteppers(void);
     };
 }
 

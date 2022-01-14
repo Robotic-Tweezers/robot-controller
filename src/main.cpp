@@ -10,10 +10,10 @@
 #define TIME_IN_MS(TIME) (TIME) * configTICK_RATE_HZ / 1000UL
 #define TIME_IN_US(TIME) (TIME) * configTICK_RATE_HZ / 1000000UL
 #define STEPPERS 3
-#define ENABLE_PIN 2        // Enable pin
-#define THETA1_ADDRESS 0b00 // TMC2209 Driver address according to MS1 and MS2
-#define THETA2_ADDRESS 0b00 // TMC2209 Driver address according to MS1 and MS2
-#define THETA3_ADDRESS 0b10 // TMC2209 Driver address according to MS1 and MS2
+#define ENABLE_PIN 12       // Enable pin
+#define THETA0_ADDRESS 0b00 // TMC2209 Driver address according to MS1 and MS2
+#define THETA1_ADDRESS 0b01 // TMC2209 Driver address according to MS1 and MS2
+#define THETA2_ADDRESS 0b10 // TMC2209 Driver address according to MS1 and MS2
 
 using namespace Eigen;
 using namespace RobotTweezers;
@@ -23,19 +23,6 @@ const Matrix6f kp = vectorToDiagnol6((float[]){0, 0, 0, 1.00, 1.00, 1.00});
 const Matrix6f kv = vectorToDiagnol6((float[]){0.1, 0.5, 0.1, 0.1, 0.5, 0.1});
 volatile float desired_position;
 Stepper* steppers[3];
-
-Stepper* createStepperMotor(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction)
-{
-    Stepper* stepper = new Stepper(serial, address, step, direction);
-    if (stepper->uart->test_connection() != 0)
-    {
-        return stepper;
-    }
-
-    uint32_t gconf_data = 0x0000;
-    stepper->uart->GCONF(gconf_data);
-    return stepper;
-}
 
 void controlLoop(void *arg)
 {
@@ -102,9 +89,16 @@ void serialInterface(void *arg)
 void setup()
 {
     portBASE_TYPE status = pdPASS;
+    HardwareSerial* stepper_serial = &Serial1;
     // Blink built in LED to indicate problem
-    auto error_state = [](void) -> void
+    auto error_state = [&](String message) -> void
     {
+        Serial.println(message);
+
+        delete steppers[0];
+        // delete steppers[1];
+        // delete steppers[2];
+
         while (true)
         {
             digitalWrite(LED_BUILTIN, LOW);
@@ -114,8 +108,15 @@ void setup()
         }
     };
 
+    Stepper::setEnablePin(ENABLE_PIN);
+    Stepper::enableSteppers();
+
     Serial.begin(9600);
-    Serial1.begin(460800);
+    stepper_serial->begin(460800);
+
+    steppers[0] = new Stepper(stepper_serial, THETA0_ADDRESS, 2, 3);
+    // steppers[1] = new Stepper(stepper_serial, THETA1_ADDRESS, 3, 4);
+    // steppers[2] = new Stepper(stepper_serial, THETA2_ADDRESS, 3, 4);
 
     // Enable steppers
     pinMode(ENABLE_PIN, OUTPUT);
@@ -123,27 +124,27 @@ void setup()
 
     if (status != pdPASS)
     {
-        Serial.println("Steppers did not initialize properly");
-        error_state();
+        error_state("Steppers did not initialize properly");
     }
 
     // Turn on LED to indicate correct operation
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
 
-    //status &= xTaskCreate(controlLoop, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
-    status &= xTaskCreate(serialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 1, NULL);
-
+    status &= xTaskCreate(Stepper::stepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[0], 1, NULL);
+    //status &= xTaskCreate(Stepper::stepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[1], 1, NULL);
+    //status &= xTaskCreate(Stepper::stepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[2], 1, NULL);
+    status &= xTaskCreate(serialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
+    status &= xTaskCreate(controlLoop, NULL, 100 * configMINIMAL_SECURE_STACK_SIZE, NULL, 3, NULL);
+    
     if (status != pdPASS)
     {
-        Serial.println("Creation problem");
-        error_state();
+        error_state("Creation problem");
     }
 
     vTaskStartScheduler();
 
-    Serial.println("Insufficient RAM");
-    error_state();
+    error_state("Insufficient RAM");
 }
 
 //------------------------------------------------------------------------------
