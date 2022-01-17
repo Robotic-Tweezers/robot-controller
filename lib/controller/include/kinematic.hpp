@@ -41,14 +41,14 @@ namespace RobotTweezers
          * @param alpha     The x-rotation parameter
          * @return Eigen::Matrix4f 
          */
-        Eigen::Matrix4f denavitHartenbergTransform(float theta, float length, float alpha);
+        Eigen::Matrix4f DenavitHartenbergTransform(float theta, float length, float alpha);
 
         /**
          * @brief Updates the wrist dh table with the current joint variable state
          * 
          * @param theta 
          */
-        inline void updateDHTable(const float theta[]);
+        inline void UpdateDHTable(const float theta[]);
         
         public:
 
@@ -65,7 +65,7 @@ namespace RobotTweezers
          * @param theta Current joint variable state
          * @return Eigen::Matrix4f 
          */
-        Eigen::Matrix4f directKinematics(const float theta[]);
+        Eigen::Matrix4f DirectKinematics(const float theta[]);
 
         /**
          * @brief Calculates the Jacobian matrix for a spherical wrist based on the current joint state
@@ -73,7 +73,7 @@ namespace RobotTweezers
          * @param theta Current joint variable state
          * @return Eigen::MatrixXf 
          */
-        Eigen::MatrixXf jacobian(float theta[]);
+        Eigen::MatrixXf Jacobian(float theta[]);
 
         /**
          * @brief Approximated as a sinusoidal torque acting on theta 2
@@ -81,7 +81,7 @@ namespace RobotTweezers
          * @param theta Current joint variable state
          * @return Eigen::Vector3f 
          */
-        Eigen::Vector3f gravityTorque(float theta[]);
+        Eigen::Vector3f GravityTorque(float theta[]);
     };
 }
 

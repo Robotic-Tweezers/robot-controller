@@ -24,7 +24,7 @@ RobotTweezers::Coordinates& RobotTweezers::Coordinates::operator=(const Eigen::M
     return *this;
 }
 
-Eigen::Matrix4f RobotTweezers::Coordinates::getCoordinates(void)
+Eigen::Matrix4f RobotTweezers::Coordinates::GetCoordinates(void)
 {
     Eigen::Matrix4f matrix;
     matrix << 

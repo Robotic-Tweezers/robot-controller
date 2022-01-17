@@ -23,12 +23,9 @@ namespace RobotTweezers
         uint8_t step;
         uint8_t direction;
         uint32_t period;
-        uint32_t position;
+        uint32_t state;
+        uint32_t desired_position;
         static uint8_t enable;
-
-        public:
-
-        TMC2209Stepper* uart;
 
         /**
          * @brief Construct a new Stepper object, not initialized
@@ -38,17 +35,29 @@ namespace RobotTweezers
 
         Stepper(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction);
 
-        bool initialize(void);
+        bool SetDirection(void);
 
-        uint8_t address(void);
+        public:
 
-        static void stepMotor(void *arg);
+        TMC2209Stepper* uart;
 
-        static void setEnablePin(uint8_t enable);
+        ~Stepper(void);
 
-        static void enableSteppers(void);
+        bool Initialize(void);
 
-        static void disableSteppers(void);
+        uint8_t Address(void);
+
+        void SetPosition(double position);
+        
+        static Stepper* StepperFactory(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction);
+
+        static void StepMotor(void *arg);
+
+        static void SetEnablePin(uint8_t enable);
+
+        static void Enable(void);
+
+        static void Disable(void);
     };
 }
 

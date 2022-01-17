@@ -1,3 +1,21 @@
 {
-    "test": 1
+    "version": "Robot Tweezers X.XX",
+    "enable_stepeprs": 1,
+    "steppers": [
+        {
+            "index": 0,
+            "current_position": 1.00,
+            "desired_position": 3.14
+        },
+        {
+            "index": 1,
+            "current_position": 1.00,
+            "desired_position": 3.14
+        },
+        {
+            "index": 2,
+            "current_position": 1.00,
+            "desired_position": 3.14
+        }
+    ]
 }

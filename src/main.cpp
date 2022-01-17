@@ -19,12 +19,12 @@ using namespace Eigen;
 using namespace RobotTweezers;
 
 time_t rtc_time;
-const Matrix6f kp = vectorToDiagnol6((float[]){0, 0, 0, 1.00, 1.00, 1.00});
-const Matrix6f kv = vectorToDiagnol6((float[]){0.1, 0.5, 0.1, 0.1, 0.5, 0.1});
+const Matrix6f kp = VectorToDiagnol6((float[]){0, 0, 0, 1.00, 1.00, 1.00});
+const Matrix6f kv = VectorToDiagnol6((float[]){0.1, 0.5, 0.1, 0.1, 0.5, 0.1});
 volatile float desired_position;
 Stepper* steppers[3];
 
-void controlLoop(void *arg)
+static void ControlLoop(void *arg)
 {
     const unsigned int loop_period = 1000; // ms
     float theta[3] = {0, 0, 0};
@@ -37,11 +37,12 @@ void controlLoop(void *arg)
 
     while (true)
     {
-        jacobian_matrix = wrist_kinematics.jacobian(theta);
-        gravity_torque = wrist_kinematics.gravityTorque(theta);
+        jacobian_matrix = wrist_kinematics.Jacobian(theta);
+        // @TODO do we need gravity contributions here?  
+        gravity_torque = wrist_kinematics.GravityTorque(theta);
 
         // Direct kinematics of joint state (calculate end effector position)
-        actual_position = wrist_kinematics.directKinematics(theta);
+        actual_position = wrist_kinematics.DirectKinematics(theta);
 
         // Calculate position and velocity error
         position_error = position - actual_position;
@@ -57,28 +58,53 @@ void controlLoop(void *arg)
     }
 }
 
-void serialInterface(void *arg)
+static void SerialInterface(void *arg)
 {
     while (true)
     {
         if (Serial.available() > 0)
         {
-            StaticJsonDocument<200> document;
+            StaticJsonDocument<200> gui_command;
             String json_data = Serial.readString();
-            DeserializationError err = deserializeJson(document, json_data);
+            DeserializationError err = deserializeJson(gui_command, json_data);
             if (err)
             {
                 // Error in decoding message
                 continue;
             }
 
-            if (document.containsKey("name"))
+            // If sender includes version keyword, respond with firmware verison
+            if (gui_command.containsKey("version"))
             {
                 String response;
-                document["name"] = "Robot Tweezers v0.0";
-                document["stepper_count"] = STEPPERS;
-                serializeJson(document, response);
+                uint8_t stepper_count = 0;
+                gui_command["version"] = "Robot Tweezers v0.0";
+                for (auto stepper : steppers)
+                {
+                    if (stepper)
+                    {
+                        stepper_count++;
+                    }
+                }
+                
+                gui_command["stepper_count"] = stepper_count;
+                serializeJson(gui_command, response);
                 Serial.print(response);
+            }
+            
+            // Enable/Disable steppers
+            if (gui_command.containsKey("enable_steppers"))
+            {
+                gui_command["enable_steppers"] ? Stepper::Enable() : Stepper::Disable();
+            }
+
+            if (gui_command.containsKey("steppers"))
+            {
+                for (uint8_t i = 0; i < STEPPERS; i++)
+                {
+                    uint8_t index = gui_command["steppers"][i]["index"];
+                    steppers[index]->SetPosition(gui_command["steppers"][i]["desired_position"]);
+                }
             }
         }
 
@@ -96,8 +122,8 @@ void setup()
         Serial.println(message);
 
         delete steppers[0];
-        // delete steppers[1];
-        // delete steppers[2];
+        delete steppers[1];
+        delete steppers[2];
 
         while (true)
         {
@@ -108,19 +134,15 @@ void setup()
         }
     };
 
-    Stepper::setEnablePin(ENABLE_PIN);
-    Stepper::enableSteppers();
+    Stepper::SetEnablePin(ENABLE_PIN);
+    Stepper::Enable();
 
     Serial.begin(9600);
     stepper_serial->begin(460800);
 
-    steppers[0] = new Stepper(stepper_serial, THETA0_ADDRESS, 2, 3);
-    // steppers[1] = new Stepper(stepper_serial, THETA1_ADDRESS, 3, 4);
-    // steppers[2] = new Stepper(stepper_serial, THETA2_ADDRESS, 3, 4);
-
-    // Enable steppers
-    pinMode(ENABLE_PIN, OUTPUT);
-    digitalWrite(ENABLE_PIN, LOW);
+    steppers[0] = Stepper::StepperFactory(stepper_serial, THETA0_ADDRESS, 2, 3);
+    steppers[1] = Stepper::StepperFactory(stepper_serial, THETA1_ADDRESS, 4, 5);
+    steppers[2] = Stepper::StepperFactory(stepper_serial, THETA2_ADDRESS, 6, 7);
 
     if (status != pdPASS)
     {
@@ -131,11 +153,11 @@ void setup()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
 
-    status &= xTaskCreate(Stepper::stepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[0], 1, NULL);
-    //status &= xTaskCreate(Stepper::stepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[1], 1, NULL);
-    //status &= xTaskCreate(Stepper::stepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[2], 1, NULL);
-    status &= xTaskCreate(serialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
-    status &= xTaskCreate(controlLoop, NULL, 100 * configMINIMAL_SECURE_STACK_SIZE, NULL, 3, NULL);
+    status &= xTaskCreate(Stepper::StepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[0], 1, NULL);
+    status &= xTaskCreate(Stepper::StepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[1], 1, NULL);
+    status &= xTaskCreate(Stepper::StepMotor, NULL, configMINIMAL_SECURE_STACK_SIZE, (void*)steppers[2], 1, NULL);
+    status &= xTaskCreate(SerialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
+    status &= xTaskCreate(ControlLoop, NULL, 100 * configMINIMAL_SECURE_STACK_SIZE, NULL, 3, NULL);
     
     if (status != pdPASS)
     {

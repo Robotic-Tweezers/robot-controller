@@ -1,5 +1,6 @@
 import sys
 import os
+from turtle import goto
 import serial
 import serial.tools.list_ports as SerialPort
 import PySimpleGUI as Gui
@@ -56,15 +57,20 @@ def connect():
 
     for port in ports:
         port = serial_init(port.name)
-        write_json(port, {"name": ""})
+        write_json(port, {"version": ""})
         connection_string = read_json(port)
-        return connection_string, port
+        if connection_string["version"].startswith("Robot Tweezers"):
+            return connection_string, port
+
+    return NULL, NULL
 
 def main():
     firmware, tweezers_port = connect()
+    if firmware is NULL:
+        return
     print("Connected to " + firmware['name'] + " on port " + tweezers_port.name)
     layout = [[Gui.Text(firmware['name'], size=(10, 10))], [Gui.Button("Toggle LED")]]
-    window = load_window(tweezers_port.name, 3)
+    window = load_window(tweezers_port.name, firmware["stepper_count"])
     led = True
     while True:
         event, values = window.read()
