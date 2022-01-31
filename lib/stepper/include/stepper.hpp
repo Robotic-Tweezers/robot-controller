@@ -10,48 +10,66 @@
 // https://github.com/teemuatlut/TMCStepper
 // https://www.trinamic.com/fileadmin/assets/Products/ICs_Documents/TMC2209_Datasheet_V103.pdf
 
+#define STEPS 200
+#define MICROSTEP_MAX(RESOLUTION) STEPS *(RESOLUTION)
+#define REGISTER_STEP_COUNTER(INDEX)                                                                  \
+    ({                                                                                                \
+        if (steppers[(INDEX)])                                                                        \
+        {                                                                                             \
+            auto ISR = [](void) -> void                                                               \
+            {                                                                                         \
+                steppers[(INDEX)]->microstep_count += steppers[(INDEX)]->direction ? 1 : -1;          \
+                if (abs(steppers[(INDEX)]->microstep_count) >= STEPS * steppers[(INDEX)]->microstep)  \
+                {                                                                                     \
+                    steppers[(INDEX)]->microstep_count = 0;                                           \
+                }                                                                                     \
+            };                                                                                        \
+            pinMode(steppers[(INDEX)]->step_counter_pin, INPUT_PULLUP);                               \
+            attachInterrupt(digitalPinToInterrupt(steppers[(INDEX)]->step_counter_pin), ISR, RISING); \
+        }                                                                                             \
+    })
+
 namespace RobotTweezers
 {
     /**
      * @brief A step/direction + uart control interface using the TMC stepper library
-     * 
+     *
      */
     class Stepper
     {
-        private:
-
-        uint8_t step;
-        uint8_t direction;
-        uint32_t period;
-        uint32_t state;
-        uint32_t desired_position;
+    private:
+        uint8_t step_pin;
+        uint8_t direction_pin;
+        TMC2209Stepper uart;
         static uint8_t enable;
 
         /**
          * @brief Construct a new Stepper object, not initialized
-         * 
+         *
          */
         Stepper();
 
-        Stepper(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction);
+        Stepper(HardwareSerial *serial, uint8_t address, uint8_t step_pin, uint8_t direction_pin);
 
-        bool SetDirection(void);
+        void SetDirection(bool direction);
 
-        public:
+        void SetPWMFrequency(float frequency);
 
-        TMC2209Stepper* uart;
-
-        ~Stepper(void);
+    public:
+        uint8_t step_counter_pin;
+        uint16_t microstep;
+        bool direction;
+        volatile uint64_t microstep_count;
 
         bool Initialize(void);
 
         uint8_t Address(void);
 
-        void SetPosition(double position);
-        
-        static Stepper* StepperFactory(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction);
+        void SetVelocity(float velocity);
 
-        static void StepMotor(void *arg);
+        float GetPosition(void);
+
+        static Stepper *StepperFactory(HardwareSerial *serial, uint8_t address, uint8_t step_pin, uint8_t direction);
 
         static void SetEnablePin(uint8_t enable);
 

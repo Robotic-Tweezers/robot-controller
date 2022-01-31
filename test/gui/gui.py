@@ -16,12 +16,23 @@ def load_window(port_name, steppers):
     layout = [
         [Gui.Text("Robot Tweezers Test GUI")],
         [Gui.Text("Connected to: " + port_name), Gui.Button("Reconnect")],
-        [Gui.Text("Stepper Settings"), Gui.InputText(), Gui.Button("Download Settings")]
+        [Gui.Text("Stepper Settings"), Gui.InputText(key='velocity'), Gui.Button("Download Settings")]
     ]
     for i in range(steppers):
-        layout.append([Gui.Text("Stepper %d" % i), Gui.InputText(default_text=0, size=(15, 30)), Gui.Button("Goto")])
+        layout.append([Gui.Text("Stepper %d" % i), Gui.InputText(default_text=0, size=(15, 30)), Gui.Button("Go")])
 
-    return Gui.Window(title="Robot Tweezers Test GUI", layout=layout, margins=(400, 300))
+    window = Gui.Window(title="Robot Tweezers Test GUI", layout=layout, margins=(400, 300))
+    
+    while True:
+        event, values = window.read()
+        # End program if user closes window or
+        # presses the OK button
+        if event == "Go":
+            print(values["velocity"])
+        if event == Gui.WIN_CLOSED:
+            break
+        
+    window.close()
 
 def read_json(port):
     received = port.inWaiting()
@@ -68,24 +79,8 @@ def main():
     firmware, tweezers_port = connect()
     if firmware is NULL:
         return
-    print("Connected to " + firmware['name'] + " on port " + tweezers_port.name)
-    layout = [[Gui.Text(firmware['name'], size=(10, 10))], [Gui.Button("Toggle LED")]]
-    window = load_window(tweezers_port.name, firmware["stepper_count"])
-    led = True
-    while True:
-        event, values = window.read()
-        # End program if user closes window or
-        # presses the OK button
-        if event == "Toggle LED":
-            if led:
-                led = False
-            else:
-                led = True
-            write_json(tweezers_port, {"led_state": led})
-        if event == Gui.WIN_CLOSED:
-            break
-        
-    window.close()
+    print("Connected to " + firmware['version'] + " on port " + tweezers_port.name)
+    load_window(tweezers_port.name, firmware["stepper_count"])
 
 if __name__ == '__main__':
     main()

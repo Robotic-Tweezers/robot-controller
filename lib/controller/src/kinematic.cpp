@@ -9,19 +9,24 @@ Eigen::Matrix4f RobotTweezers::Kinematic::DenavitHartenbergTransform(float theta
     return dh_transform;
 }
 
-void RobotTweezers::Kinematic::UpdateDHTable(const float theta[])
+void RobotTweezers::Kinematic::UpdateDHTable(const Eigen::Vector3f& theta)
 {
-    dh_table[0][0] = theta[0];
-    dh_table[1][0] = theta[1];
-    dh_table[2][0] = theta[2];
+    dh_table[0][0] = theta(0);
+    dh_table[1][0] = theta(1);
+    dh_table[2][0] = theta(2);
 }
 
-RobotTweezers::Kinematic::Kinematic(float theta[])
+RobotTweezers::Kinematic::Kinematic(void)
+{
+    UpdateDHTable(Eigen::Vector3f(0, 0, 0));
+}
+
+RobotTweezers::Kinematic::Kinematic(const Eigen::Vector3f& theta)
 {
     UpdateDHTable(theta);
 }
 
-Eigen::Matrix4f RobotTweezers::Kinematic::DirectKinematics(const float theta[])
+Eigen::Matrix4f RobotTweezers::Kinematic::DirectKinematics(const Eigen::Vector3f& theta)
 {
     Eigen::Matrix4f end_effector;
     origins[0] << 0, 0, 0;
@@ -42,7 +47,7 @@ Eigen::Matrix4f RobotTweezers::Kinematic::DirectKinematics(const float theta[])
     return end_effector;
 }
 
-Eigen::MatrixXf RobotTweezers::Kinematic::Jacobian(float theta[])
+Eigen::MatrixXf RobotTweezers::Kinematic::Jacobian(void)
 {
     Eigen::MatrixXf jacobian_matrix(6, 3);
     for (int i = 0; i < 3; i++)
@@ -57,7 +62,7 @@ Eigen::MatrixXf RobotTweezers::Kinematic::Jacobian(float theta[])
     return jacobian_matrix;
 }
 
-Eigen::Vector3f RobotTweezers::Kinematic::GravityTorque(float theta[])
+Eigen::Vector3f RobotTweezers::Kinematic::GravityTorque(const Eigen::Vector3f& theta)
 {
     // Torque acting on theta 2 when theta 2 = pi / 2
     const float max_gravity_torque = 0.05;

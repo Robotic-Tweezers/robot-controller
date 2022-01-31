@@ -1,104 +1,90 @@
 #include <stepper.hpp>
 
-#define RSENSE  0.11f
-
-inline bool RobotTweezers::Stepper::SetDirection(void)
-{
-    digitalWrite(direction, desired_position > state);
-    return desired_position > state;
-}
+#define RSENSE 0.11f
 
 uint8_t RobotTweezers::Stepper::enable = 12;
 
-RobotTweezers::Stepper::Stepper(void) : uart(nullptr) {}
+RobotTweezers::Stepper::Stepper() : uart(nullptr, 0.11f, 0b00) {}
 
-RobotTweezers::Stepper::Stepper(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction)
-    : step(step), direction(direction)
+RobotTweezers::Stepper::Stepper(HardwareSerial *serial, uint8_t address, uint8_t step_pin, uint8_t direction_pin)
+    : step_pin(step_pin), direction_pin(direction_pin), uart(serial, 0.11f, address)
 {
-    uart = new TMC2209Stepper(serial, 0.11f, address);
-    period = 350;
-    state = 0;
-    desired_position = 5000;
-    
-    pinMode(step, OUTPUT);
-    pinMode(direction, OUTPUT);
+    pinMode(step_pin, OUTPUT);
+    pinMode(direction_pin, OUTPUT);
+    SetDirection(false);
     Initialize();
 }
 
-RobotTweezers::Stepper::~Stepper(void)
+void RobotTweezers::Stepper::SetDirection(bool direction)
 {
-    //delete uart;
-} 
+    this->direction = direction;
+    digitalWrite(direction_pin, direction);
+}
+
+void RobotTweezers::Stepper::SetPWMFrequency(float frequency)
+{
+    analogWriteFrequency(step_pin, frequency);
+    analogWrite(step_pin, 128);
+}
 
 bool RobotTweezers::Stepper::Initialize(void)
 {
-    //uint32_t gconf_data = 0x00C0;
-    //uart->begin();
+    // uint32_t gconf_data = 0x00C0;
+    microstep_count = 0;
+    microstep = 1;
 
-    uart->SLAVECONF(0x0000);
-    uart->microsteps(8);
-    //uart->VACTUAL(5000);
-    //uart->GCONF(gconf_data);
-    //uart->SLAVECONF(0x0000);
-    //uart->toff(4);
+    SetVelocity(0);
+
+    uart.begin();
+
+    uart.SLAVECONF(0x0000);
+    uart.microsteps(0);
+
+    // uart.VACTUAL(5000);
+    // uart.GCONF(gconf_data);
+    // uart.SLAVECONF(0x0000);
+    // uart.toff(4);
     ///// @TODO Figure out what these do
-    //uart->blank_time(24);
-    //uart->rms_current(400);
+    // uart.blank_time(24);
+    // uart.rms_current(400);
     //// Set microstep resolution
     ///// @TODO Figure out what these do
-    //uart->TCOOLTHRS(0xFFFFF);
-    //uart->semin(5);
-    //uart->semax(2);
-    //uart->sedn(0b01);
-    //uart->SGTHRS(50);
+    // uart.TCOOLTHRS(0xFFFFF);
+    // uart.semin(5);
+    // uart.semax(2);
+    // uart.sedn(0b01);
+    // uart.SGTHRS(50);
     return true;
 }
 
 uint8_t RobotTweezers::Stepper::Address(void)
 {
-    return uart->ms2() << 1 | uart->ms1();
+    return uart.ms2() << 1 | uart.ms1();
 }
 
-void RobotTweezers::Stepper::SetPosition(double position)
+void RobotTweezers::Stepper::SetVelocity(float velocity)
 {
-    uint16_t resolution = uart->microsteps();
-    desired_position = position / (2 * PI) * resolution;
-}
-
-RobotTweezers::Stepper* RobotTweezers::Stepper::StepperFactory(HardwareSerial* serial, uint8_t address, uint8_t step, uint8_t direction)
-{
-    Stepper* stepper = new Stepper(serial, address, step, direction);
-    if (stepper->uart->test_connection() != 0)
+    // Undefined behaviour when writing zero frequency
+    if (abs(velocity) < 0.1)
     {
-        delete stepper;
-        return nullptr;
-    }
-
-    return stepper;
-}
-
-void RobotTweezers::Stepper::StepMotor(void *arg)
-{
-    Stepper* stepper = static_cast<Stepper*>(arg);
-    if (not stepper)
-    {
+        digitalWrite(step_pin, LOW);
         return;
     }
 
-    while (true)
-    {
-        //bool positive_dir = stepper->SetDirection();
-        //if (stepper->desired_position == stepper->state)
-        //{
-        //    continue;
-        //}
+    float frequency = (float)STEPS * microstep * abs(velocity) / (2 * PI);
+    SetDirection(velocity > 0.00);
+    SetPWMFrequency(frequency);
+}
 
-        digitalWrite(stepper->step, HIGH);
-        vTaskDelay(stepper->period * configTICK_RATE_HZ / 2000000UL);
-        digitalWrite(stepper->step, LOW);
-        vTaskDelay(stepper->period * configTICK_RATE_HZ / 2000000UL);
-        //stepper->state += positive_dir ? 1 : -1;
-    }
+float RobotTweezers::Stepper::GetPosition(void)
+{
+    return microstep != 0 ? 2.00f * PI * microstep_count / (STEPS * microstep) : 0.00;
+}
+
+RobotTweezers::Stepper *RobotTweezers::Stepper::StepperFactory(HardwareSerial *serial, uint8_t address, uint8_t step, uint8_t direction)
+{
+    TMC2209Stepper test_stepper(serial, 0.11f, address);
+    return test_stepper.test_connection() == 0 ? new Stepper(serial, address, step, direction) : nullptr;
 }
 
 void RobotTweezers::Stepper::SetEnablePin(uint8_t enable)

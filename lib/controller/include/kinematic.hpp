@@ -48,16 +48,22 @@ namespace RobotTweezers
          * 
          * @param theta 
          */
-        inline void UpdateDHTable(const float theta[]);
+        inline void UpdateDHTable(const Eigen::Vector3f& theta);
         
         public:
 
         /**
          * @brief Construct a new Kinematic object
          * 
+         */
+        Kinematic(void);
+
+        /**
+         * @brief Construct a new Kinematic object
+         * 
          * @param theta Joint variable initial state
          */
-        Kinematic(float theta[]);
+        Kinematic(const Eigen::Vector3f& theta);
 
         /**
          * @brief Direct kinematics for a 3-degree of freedom spherical wrist
@@ -65,7 +71,7 @@ namespace RobotTweezers
          * @param theta Current joint variable state
          * @return Eigen::Matrix4f 
          */
-        Eigen::Matrix4f DirectKinematics(const float theta[]);
+        Eigen::Matrix4f DirectKinematics(const Eigen::Vector3f& theta);
 
         /**
          * @brief Calculates the Jacobian matrix for a spherical wrist based on the current joint state
@@ -73,7 +79,7 @@ namespace RobotTweezers
          * @param theta Current joint variable state
          * @return Eigen::MatrixXf 
          */
-        Eigen::MatrixXf Jacobian(float theta[]);
+        Eigen::MatrixXf Jacobian(void);
 
         /**
          * @brief Approximated as a sinusoidal torque acting on theta 2
@@ -81,7 +87,7 @@ namespace RobotTweezers
          * @param theta Current joint variable state
          * @return Eigen::Vector3f 
          */
-        Eigen::Vector3f GravityTorque(float theta[]);
+        Eigen::Vector3f GravityTorque(const Eigen::Vector3f& theta);
     };
 }
 
