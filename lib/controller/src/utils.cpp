@@ -47,6 +47,11 @@ Eigen::Matrix6f RobotTweezers::VectorToDiagnol6(const float vector[])
     return diagnol;
 }
 
+bool RobotTweezers::ApproxEqual(float a, float b, float epsilon)
+{
+    return fabs(a) < epsilon && fabs(b) < epsilon;
+}
+
 float RobotTweezers::Kahan::Problem1(const Eigen::Vector3f& s, const Eigen::Vector3f& t)
 {
     Eigen::Vector3f u = s.normalized() - t.normalized();

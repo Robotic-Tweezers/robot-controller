@@ -12,21 +12,18 @@
 
 #define STEPS 200
 #define MICROSTEP_MAX(RESOLUTION) STEPS *(RESOLUTION)
-#define REGISTER_STEP_COUNTER(INDEX)                                                                  \
-    ({                                                                                                \
-        if (steppers[(INDEX)])                                                                        \
-        {                                                                                             \
-            auto ISR = [](void) -> void                                                               \
-            {                                                                                         \
-                steppers[(INDEX)]->microstep_count += steppers[(INDEX)]->direction ? 1 : -1;          \
-                if (abs(steppers[(INDEX)]->microstep_count) >= STEPS * steppers[(INDEX)]->microstep)  \
-                {                                                                                     \
-                    steppers[(INDEX)]->microstep_count = 0;                                           \
-                }                                                                                     \
-            };                                                                                        \
-            pinMode(steppers[(INDEX)]->step_counter_pin, INPUT_PULLUP);                               \
-            attachInterrupt(digitalPinToInterrupt(steppers[(INDEX)]->step_counter_pin), ISR, RISING); \
-        }                                                                                             \
+#define REGISTER_STEP_COUNTER(INDEX)                                                              \
+    ({                                                                                            \
+        auto ISR = [](void) -> void                                                               \
+        {                                                                                         \
+            steppers[(INDEX)]->microstep_count += steppers[(INDEX)]->direction ? 1 : -1;          \
+            if (abs(steppers[(INDEX)]->microstep_count) >= STEPS * steppers[(INDEX)]->microstep)  \
+            {                                                                                     \
+                steppers[(INDEX)]->microstep_count = 0;                                           \
+            }                                                                                     \
+        };                                                                                        \
+        pinMode(steppers[(INDEX)]->step_counter_pin, INPUT_PULLUP);                               \
+        attachInterrupt(digitalPinToInterrupt(steppers[(INDEX)]->step_counter_pin), ISR, RISING); \
     })
 
 namespace RobotTweezers
@@ -59,7 +56,7 @@ namespace RobotTweezers
         uint8_t step_counter_pin;
         uint16_t microstep;
         bool direction;
-        volatile uint64_t microstep_count;
+        volatile int64_t microstep_count;
 
         bool Initialize(void);
 

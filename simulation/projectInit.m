@@ -22,7 +22,7 @@ run_config_command = ...
 [status, commandOut] = system(run_config_command);
 
 if status ~= 0
-    fprintf("Error: Filed to execute project configurations.\n");
+    fprintf("Error: Failed to execute project configurations.\n");
     return
 end
 

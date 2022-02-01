@@ -31,14 +31,14 @@ bool RobotTweezers::Stepper::Initialize(void)
 {
     // uint32_t gconf_data = 0x00C0;
     microstep_count = 0;
-    microstep = 1;
+    microstep = 8;
 
     SetVelocity(0);
 
     uart.begin();
 
     uart.SLAVECONF(0x0000);
-    uart.microsteps(0);
+    uart.microsteps(microstep);
 
     // uart.VACTUAL(5000);
     // uart.GCONF(gconf_data);

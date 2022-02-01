@@ -35,7 +35,7 @@ Vector6f joint_state;
 
 static void ControlLoop(void *arg)
 {
-    Vector3f gravity_torque, applied_torque;
+    Vector3f gravity_torque;
     Kinematic wrist_kinematics;
     Coordinates actual_position;
     Vector6f position_error, velocity_error, state_error;
@@ -45,11 +45,10 @@ static void ControlLoop(void *arg)
     {
         for (uint8_t i = 0; i < STEPPERS; i++)
         {
-            if (steppers[i])
-            {
-                joint_state(i) = steppers[i]->GetPosition();
-            }
+            joint_state(i) = steppers[i]->GetPosition();
         }
+
+        Serial.println(joint_state(2));
 
         // Direct kinematics of joint state (calculate end effector position)
         actual_position = wrist_kinematics.DirectKinematics(joint_state.head(3));
@@ -69,18 +68,12 @@ static void ControlLoop(void *arg)
         state_error = (kp * position_error) + (kv * velocity_error);
 
         // Add gravity contributions
-        applied_torque = gravity_torque + (jacobian_matrix.transpose() * state_error);
+        joint_state.tail(3) = gravity_torque + (jacobian_matrix.transpose() * state_error);
 
         for (uint8_t i = 0; i < STEPPERS; i++)
         {
-            if (steppers[i])
-            {
-                joint_state(3 + i) = applied_torque(i);
-                steppers[i]->SetVelocity(joint_state(3 + i));
-            }
+            steppers[i]->SetVelocity(joint_state(3 + i));
         }
-
-        print(position_error);
 
         vTaskDelay(TIME_IN_MS(CONTROLLER_LOOP_RATE));
     }
@@ -105,17 +98,9 @@ static void SerialInterface(void *arg)
             // If sender includes version keyword, respond with firmware verison
             if (gui_command.containsKey("version"))
             {
-                uint8_t stepper_count = 0;
-                // gui_command["version"] = "Robot Tweezers v%d.%d", (VERSION_MAJOR, VERSION_MINOR);
-                for (auto stepper : steppers)
-                {
-                    if (stepper)
-                    {
-                        stepper_count++;
-                    }
-                }
-
-                gui_command["stepper_count"] = stepper_count;
+                char temp_buffer[24];
+                sprintf(temp_buffer, "Robot Tweezers v%d.%d", VERSION_MAJOR, VERSION_MINOR);
+                gui_command["version"] = temp_buffer;
             }
 
             // Enable/Disable steppers
@@ -124,22 +109,9 @@ static void SerialInterface(void *arg)
                 gui_command["enable_steppers"] ? Stepper::Enable() : Stepper::Disable();
             }
 
-            if (gui_command.containsKey("steppers"))
-            {
-                for (uint8_t i = 0; i < STEPPERS; i++)
-                {
-                    uint8_t index = gui_command["steppers"][i]["index"];
-                    //desired_position(index) = gui_command["steppers"][i]["desired_velocity"];
-                    // steppers[index]->SetVelocity(gui_command["steppers"][i]["desired_velocity"]);
-                }
-            }
-
             for (uint8_t i = 0; i < STEPPERS; i++)
             {
-                if (steppers[i])
-                {
-                    gui_command["steppers"][i]["position"] = steppers[i]->GetPosition();
-                }
+                gui_command["steppers"][i]["position"] = steppers[i]->GetPosition();
             }
 
             serializeJson(gui_command, response);
@@ -210,27 +182,15 @@ void setup()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
 
-    desired_position.frame = XRotation(PI) * ZRotation(PI / 2);
+    desired_position.frame = XRotation(PI) * ZRotation(-PI / 2);
     desired_position.origin = Vector3f(0, 0, 0);
     desired_velocity = Vector6f(0, 0, 0, 0, 0, 0);
     joint_state = Vector6f(0, 0, 0, 0, 0, 0);
 
     Serial.println("Set controller inputs to initial states, spawning controller.");
 
-    // status &= xTaskCreate(SerialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 1, NULL);
-    //status &= xTaskCreate(ControlLoop, NULL, 200 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
-
-    auto ISR = [](void) -> void
-    {
-        Serial.println("Index pin!");
-    };
-    pinMode(19, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(19), ISR, CHANGE);
-    steppers[0]->SetVelocity(1);
-    while (1)
-    {
-
-    }
+    status &= xTaskCreate(SerialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 1, NULL);
+    status &= xTaskCreate(ControlLoop, NULL, 100 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
 
     if (status != pdPASS)
     {
