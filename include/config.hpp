@@ -4,25 +4,26 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 
+#define CONTROLLER_LOOP_RATE 200 // Controller loop rate in ms
+#define INTERFACE_LOOP_RATE 200
+
 /**
  * @brief Controller configurations
  *
  */
-#define CONTROLLER_LOOP_RATE 200 // Controller loop rate in ms
-
 #define POSITION_GAIN_X 0.00 // Gain for position in x
 #define POSITION_GAIN_Y 0.00 // Gain for position in y
 #define POSITION_GAIN_Z 0.00 // Gain for position in z
-#define POSITION_GAIN_R 1.00 // Gain for roll angle
-#define POSITION_GAIN_P 1.00 // Gain for pitch angle
-#define POSITION_GAIN_W 1.00 // Gain for yaw angle
+#define POSITION_GAIN_R 1.80 // Gain for roll angle
+#define POSITION_GAIN_P 1.80 // Gain for pitch angle
+#define POSITION_GAIN_W 1.80 // Gain for yaw angle
 
 #define VELOCITY_GAIN_X 0.00 // Gain for velocity in x
 #define VELOCITY_GAIN_Y 0.00 // Gain for velocity in y
 #define VELOCITY_GAIN_Z 0.00 // Gain for velocity in z
-#define VELOCITY_GAIN_R 0.00 // Gain for roll angular velocity
-#define VELOCITY_GAIN_P 0.00 // Gain for pitch angular velocity
-#define VELOCITY_GAIN_W 0.00 // Gain for yaw angular velocity
+#define VELOCITY_GAIN_R 0.10 // Gain for roll angular velocity
+#define VELOCITY_GAIN_P 0.10 // Gain for pitch angular velocity
+#define VELOCITY_GAIN_W 0.10 // Gain for yaw angular velocity
 
 /**
  * @brief Stepper configurations

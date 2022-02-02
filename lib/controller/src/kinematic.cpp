@@ -58,11 +58,6 @@ Eigen::MatrixXf RobotTweezers::Kinematic::Jacobian(void)
             angular_contrib,
             k_axes[i];
     }
-    // Address home position sigularity here
-    if (ApproxEqual(jacobian_matrix(5, 0), jacobian_matrix(5, 2), 0.05))
-    {
-        jacobian_matrix(5, 0) = 0.00;
-    }
 
     return jacobian_matrix;
 }

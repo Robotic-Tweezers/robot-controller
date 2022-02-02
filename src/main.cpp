@@ -28,6 +28,7 @@ const Matrix6f kv = VectorToDiagnol6((float[]){
     VELOCITY_GAIN_P,
     VELOCITY_GAIN_W});
 time_t rtc_time;
+// Controller variables
 Stepper *steppers[3];
 Coordinates desired_position;
 Vector6f desired_velocity;
@@ -48,13 +49,13 @@ static void ControlLoop(void *arg)
             joint_state(i) = steppers[i]->GetPosition();
         }
 
-        Serial.println(joint_state(2));
-
         // Direct kinematics of joint state (calculate end effector position)
         actual_position = wrist_kinematics.DirectKinematics(joint_state.head(3));
 
         // Calculates Jacobian matrix, must be called after DirectKinematics
         jacobian_matrix = wrist_kinematics.Jacobian();
+
+        print(joint_state.head(3).matrix());
 
         // @TODO do we need gravity contributions here?
         //gravity_torque = wrist_kinematics.GravityTorque(joint_state.head(3));
@@ -66,9 +67,16 @@ static void ControlLoop(void *arg)
 
         // Total state error
         state_error = (kp * position_error) + (kv * velocity_error);
-
+        
         // Add gravity contributions
         joint_state.tail(3) = gravity_torque + (jacobian_matrix.transpose() * state_error);
+
+        // Resolve singularity, since theta 0 always points in -z we need to check if theta 2 does
+        if (jacobian_matrix(5, 2) <= -0.98)
+        {
+            // Set theta 0 velocity to zero
+            joint_state(3) = 0.00;
+        }
 
         for (uint8_t i = 0; i < STEPPERS; i++)
         {
@@ -81,15 +89,16 @@ static void ControlLoop(void *arg)
 
 static void SerialInterface(void *arg)
 {
+    Stream *client_interface = static_cast<Stream*>(arg);
+    StaticJsonDocument<256> gui_command;
+    String json_command, response;
+
     while (true)
     {
         if (Serial.available() > 0)
         {
-            StaticJsonDocument<200> gui_command;
-            String json_data = Serial.readString();
-            String response;
-            DeserializationError err = deserializeJson(gui_command, json_data);
-            if (err)
+            json_command = client_interface->readString();
+            if (deserializeJson(gui_command, json_command))
             {
                 // Error in decoding message
                 continue;
@@ -101,6 +110,15 @@ static void SerialInterface(void *arg)
                 char temp_buffer[24];
                 sprintf(temp_buffer, "Robot Tweezers v%d.%d", VERSION_MAJOR, VERSION_MINOR);
                 gui_command["version"] = temp_buffer;
+                serializeJson(gui_command, response);
+                client_interface->print(response);
+            }
+
+            for (uint8_t i = 0; i < STEPPERS; i++)
+            {
+                gui_command["steppers"][i]["position"] = steppers[i]->GetPosition();
+                serializeJson(gui_command, response);
+                client_interface->print(response);
             }
 
             // Enable/Disable steppers
@@ -108,17 +126,9 @@ static void SerialInterface(void *arg)
             {
                 gui_command["enable_steppers"] ? Stepper::Enable() : Stepper::Disable();
             }
-
-            for (uint8_t i = 0; i < STEPPERS; i++)
-            {
-                gui_command["steppers"][i]["position"] = steppers[i]->GetPosition();
-            }
-
-            serializeJson(gui_command, response);
-            Serial.print(response);
         }
 
-        vTaskDelay(TIME_IN_MS(100));
+        vTaskDelay(TIME_IN_MS(INTERFACE_LOOP_RATE));
     }
 }
 
@@ -150,7 +160,7 @@ void setup()
     Serial.print(".");
     Serial.println(VERSION_MINOR);
 
-    // Set pin and enable steppers
+    // Set pin and enable all steppers
     Stepper::SetEnablePin(ENABLE_PIN);
     Stepper::Enable();
 
@@ -183,13 +193,10 @@ void setup()
     digitalWrite(LED_BUILTIN, HIGH);
 
     desired_position.frame = XRotation(PI) * ZRotation(-PI / 2);
-    desired_position.origin = Vector3f(0, 0, 0);
-    desired_velocity = Vector6f(0, 0, 0, 0, 0, 0);
-    joint_state = Vector6f(0, 0, 0, 0, 0, 0);
 
     Serial.println("Set controller inputs to initial states, spawning controller.");
 
-    status &= xTaskCreate(SerialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, NULL, 1, NULL);
+    status &= xTaskCreate(SerialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 1, NULL);
     status &= xTaskCreate(ControlLoop, NULL, 100 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, NULL);
 
     if (status != pdPASS)

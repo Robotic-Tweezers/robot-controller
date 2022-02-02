@@ -73,17 +73,6 @@ namespace RobotTweezers
      * @return Eigen::Matrix6f 
      */
     Eigen::Matrix6f VectorToDiagnol6(const float vector[]);
-
-    /**
-     * @brief Compare two floats for near equality
-     * 
-     * @param a operand 1
-     * @param b operand 2
-     * @param epsilon threshold value
-     * @return true a and b are nearly equal 
-     * @return false a and b are not nearly equal
-     */
-    bool ApproxEqual(float a, float b, float epsilon);
 }
 
 #endif // _UTILS_HPP_
