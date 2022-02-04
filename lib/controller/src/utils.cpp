@@ -47,6 +47,14 @@ Eigen::Matrix6f RobotTweezers::VectorToDiagnol6(const float vector[])
     return diagnol;
 }
 
+Eigen::Matrix3f RobotTweezers::EulerXYZToRotation(const float x, const float y, const float z)
+{
+    Eigen::AngleAxisf x_rotation(x, Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf y_rotation(y, Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf z_rotation(z, Eigen::Vector3f::UnitZ());
+    return (x_rotation * y_rotation * z_rotation).toRotationMatrix();
+}
+
 float RobotTweezers::Kahan::Problem1(const Eigen::Vector3f& s, const Eigen::Vector3f& t)
 {
     Eigen::Vector3f u = s.normalized() - t.normalized();

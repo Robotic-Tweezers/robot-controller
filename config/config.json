@@ -1,7 +1,7 @@
 {
     "version": "Robot Tweezers X.XX",
     "enable_stepeprs": 1,
-    "steppers": [
+    "actuators": [
         {
             "index": 0,
             "current_position": 1.00,

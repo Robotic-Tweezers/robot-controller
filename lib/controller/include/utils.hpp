@@ -73,6 +73,16 @@ namespace RobotTweezers
      * @return Eigen::Matrix6f 
      */
     Eigen::Matrix6f VectorToDiagnol6(const float vector[]);
+
+    /**
+     * @brief Calculates the rotation matrix specified by XYZ Euler Angles
+     * 
+     * @param x X1 Euler angle
+     * @param y Y2 Euler angle
+     * @param z Z3 Euler angle
+     * @return Eigen::Matrix3f Rotation matrix 
+     */
+    Eigen::Matrix3f EulerXYZToRotation(const float x, const float y, const float z);
 }
 
 #endif // _UTILS_HPP_

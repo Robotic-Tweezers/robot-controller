@@ -12,14 +12,16 @@ from serial.tools.list_ports_windows import NULL
 tweezers_port = serial.Serial()
 connection_string = ""
 
-def load_window(port_name, steppers):
+def load_window(port):
     layout = [
         [Gui.Text("Robot Tweezers Test GUI")],
-        [Gui.Text("Connected to: " + port_name), Gui.Button("Reconnect")],
-        [Gui.Text("Stepper Settings"), Gui.InputText(key='velocity'), Gui.Button("Download Settings")]
+        [Gui.Text("Connected to: " + port.name), Gui.Button("Reconnect")],
+        [Gui.Text("Actuator Settings"), Gui.InputText(key="actuator_settings")],
+        [Gui.Text("Roll Angle"), Gui.InputText(key="roll", default_text=0, size=(15, 30))],
+        [Gui.Text("Pitch Angle"), Gui.InputText(key="pitch", default_text=0, size=(15, 30))],
+        [Gui.Text("Yaw Angle"), Gui.InputText(key="yaw", default_text=0, size=(15, 30))],
+        [Gui.Button("Go")]
     ]
-    for i in range(steppers):
-        layout.append([Gui.Text("Stepper %d" % i), Gui.InputText(default_text=0, size=(15, 30)), Gui.Button("Go")])
 
     window = Gui.Window(title="Robot Tweezers Test GUI", layout=layout, margins=(400, 300))
     
@@ -28,7 +30,11 @@ def load_window(port_name, steppers):
         # End program if user closes window or
         # presses the OK button
         if event == "Go":
-            print(values["velocity"])
+            command = {"position": {}}
+            command["position"]["roll"] = values["roll"]
+            command["position"]["pitch"] = values["pitch"]
+            command["position"]["yaw"] = values["yaw"]
+            write_json(port, command)
         if event == Gui.WIN_CLOSED:
             break
         
@@ -53,7 +59,7 @@ def write_json(port, data):
     
 def serial_init(name):
     port = serial.Serial(name, timeout=1)
-    port.baudrate = 9600
+    port.baudrate = 921600
     port.bytesize = 8
     port.parity = serial.serialutil.PARITY_NONE
     port.stopbits = 1
@@ -70,6 +76,8 @@ def connect():
         port = serial_init(port.name)
         write_json(port, {"version": ""})
         connection_string = read_json(port)
+        if connection_string == "":
+            continue
         if connection_string["version"].startswith("Robot Tweezers"):
             return connection_string, port
 
@@ -80,7 +88,7 @@ def main():
     if firmware is NULL:
         return
     print("Connected to " + firmware['version'] + " on port " + tweezers_port.name)
-    load_window(tweezers_port.name, firmware["stepper_count"])
+    load_window(tweezers_port)
 
 if __name__ == '__main__':
     main()
