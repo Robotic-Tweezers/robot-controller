@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <FreeRTOS_TEENSY4.h>
+#include <ArduinoEigen.h>
 #include <TMCStepper.h>
 #include <actuator_settings.hpp>
 
@@ -50,7 +51,7 @@ namespace RobotTweezers
          */
         Actuator(void);
 
-        Actuator(HardwareSerial *serial, ActuatorSettings& settings);
+        Actuator(HardwareSerial *serial, ActuatorSettings &settings);
 
         Actuator(HardwareSerial *serial, uint8_t address, uint8_t step_pin, uint8_t direction_pin);
 
@@ -75,8 +76,8 @@ namespace RobotTweezers
         void SetMotionLimits(float min, float max);
 
         void SetGearRatio(float gear_ratio);
-        
-        static Actuator *ActuatorFactory(HardwareSerial *serial, ActuatorSettings& settings);
+
+        static Actuator *ActuatorFactory(HardwareSerial *serial, ActuatorSettings &settings);
 
         static Actuator *ActuatorFactory(HardwareSerial *serial, uint8_t address, uint8_t step_pin, uint8_t direction);
 
@@ -85,6 +86,12 @@ namespace RobotTweezers
         static void Enable(void);
 
         static void Disable(void);
+
+        static void Delete(Actuator *actuators[], uint8_t size);
+
+        static void SetVelocity(Actuator *actuators[], const Eigen::Vector3f &velocity, uint8_t size);
+
+        static Eigen::Vector3f GetPosition(Actuator *actuators[], uint8_t size);
     };
 }
 

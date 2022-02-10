@@ -12,6 +12,7 @@
  * 
  */
 #define QUEUE_MAX_SIZE 100
+#define MAX_JSON_SIZE 256
 #define INTERFACE_BAUDRATE 921600
 
 /**
@@ -71,11 +72,11 @@
 
 // Add dummy values for linting and if we get off target testing working
 #ifndef LENGTH1
-#define LENGTH1 10
+#define LENGTH1 18 // cm
 #endif // LENGTH1
 
 #ifndef LENGTH2
-#define LENGTH2 15
+#define LENGTH2 9.5 // cm
 #endif // LENGTH1
 
 #endif // _CONFIG_HPP_

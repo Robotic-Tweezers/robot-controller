@@ -1,6 +1,5 @@
 import sys
 import os
-from turtle import goto
 import serial
 import serial.tools.list_ports as SerialPort
 import PySimpleGUI as Gui
@@ -11,13 +10,14 @@ from serial.tools.list_ports_windows import NULL
 
 tweezers_port = serial.Serial()
 connection_string = ""
+ROLL_DEF = 3.14159265359
 
 def load_window(port):
     layout = [
         [Gui.Text("Robot Tweezers Test GUI")],
         [Gui.Text("Connected to: " + port.name), Gui.Button("Reconnect")],
         [Gui.Text("Actuator Settings"), Gui.InputText(key="actuator_settings")],
-        [Gui.Text("Roll Angle"), Gui.InputText(key="roll", default_text=0, size=(15, 30))],
+        [Gui.Text("Roll Angle"), Gui.InputText(key="roll", default_text=3.1415, size=(15, 30))],
         [Gui.Text("Pitch Angle"), Gui.InputText(key="pitch", default_text=0, size=(15, 30))],
         [Gui.Text("Yaw Angle"), Gui.InputText(key="yaw", default_text=0, size=(15, 30))],
         [Gui.Button("Go")]

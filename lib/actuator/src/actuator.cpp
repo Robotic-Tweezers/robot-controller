@@ -7,7 +7,7 @@ uint8_t RobotTweezers::Actuator::enable = 12;
 
 RobotTweezers::Actuator::Actuator() : uart(nullptr, RSENSE, 0b00) {}
 
-RobotTweezers::Actuator::Actuator(HardwareSerial *serial, ActuatorSettings& settings)
+RobotTweezers::Actuator::Actuator(HardwareSerial *serial, ActuatorSettings &settings)
     : uart(serial, RSENSE, settings.uart_address)
 {
     step_pin = settings.step;
@@ -85,14 +85,14 @@ void RobotTweezers::Actuator::SetVelocity(float velocity)
         return;
     }
 
-    float frequency = (float)STEPS * microstep * abs(velocity) / (2 * PI);
+    float frequency = (float)STEPS * microstep * abs(velocity) * gear_ratio / (2 * PI);
     SetDirection(velocity > 0.00);
     SetPWMFrequency(frequency);
 }
 
 float RobotTweezers::Actuator::GetPosition(void)
 {
-    return microstep != 0 ? 2.00f * PI * microstep_count / (STEPS * microstep) : 0.00;
+    return microstep != 0 ? 2.00f * PI * microstep_count / (STEPS * microstep * gear_ratio) : 0.00;
 }
 
 void RobotTweezers::Actuator::SetMotionLimits(float min, float max)
@@ -106,7 +106,7 @@ void RobotTweezers::Actuator::SetGearRatio(float gear_ratio)
     this->gear_ratio = gear_ratio;
 }
 
-RobotTweezers::Actuator *RobotTweezers::Actuator::ActuatorFactory(HardwareSerial *serial, ActuatorSettings& settings)
+RobotTweezers::Actuator *RobotTweezers::Actuator::ActuatorFactory(HardwareSerial *serial, ActuatorSettings &settings)
 {
     TMC2209Stepper connection(serial, RSENSE, settings.uart_address);
     return connection.test_connection() == 0 ? new Actuator(serial, settings) : nullptr;
@@ -132,4 +132,31 @@ void RobotTweezers::Actuator::Enable(void)
 void RobotTweezers::Actuator::Disable(void)
 {
     return digitalWrite(enable, HIGH);
+}
+
+void RobotTweezers::Actuator::Delete(RobotTweezers::Actuator *actuators[], uint8_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        delete actuators[i];
+    }
+}
+
+void RobotTweezers::Actuator::SetVelocity(RobotTweezers::Actuator *actuators[], const Eigen::Vector3f &velocity, uint8_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        actuators[i]->SetVelocity(velocity(i));
+    }
+}
+
+Eigen::Vector3f RobotTweezers::Actuator::GetPosition(RobotTweezers::Actuator *actuators[], uint8_t size)
+{
+    Eigen::Vector3f position;
+    for (uint8_t i = 0; i < size; i++)
+    {
+        position(i) = actuators[i]->GetPosition();
+    }
+
+    return position;
 }

@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <TimeLib.h>
 #include <FreeRTOS_TEENSY4.h>
 #include <config.hpp>
 #include <kinematic.hpp>
 #include <coordinates.hpp>
 #include <actuator.hpp>
+#include <logger.hpp>
 #include <queue>
 
 #define TIME_IN_MS(TIME) (TIME) * configTICK_RATE_HZ / 1000UL
@@ -15,8 +15,10 @@ using namespace std;
 using namespace Eigen;
 using namespace RobotTweezers;
 
+// Task handles
 TaskHandle_t controller_handle;
 TaskHandle_t interface_handle;
+
 // Constant gain matricies
 const Matrix6f kp = VectorToDiagnol6((float[]){
     POSITION_GAIN_X,
@@ -32,6 +34,7 @@ const Matrix6f kv = VectorToDiagnol6((float[]){
     VELOCITY_GAIN_R,
     VELOCITY_GAIN_P,
     VELOCITY_GAIN_W});
+
 // Controller variables
 Actuator *actuators[ACTUATORS];
 queue<Coordinates> position_queue;
@@ -41,6 +44,7 @@ Vector6f joint_state;
 
 static bool InitializeActuators(HardwareSerial *serial)
 {
+    bool status = true;
     ActuatorSettings settings[ACTUATORS];
     settings[0] = ActuatorSettings {
         .step = THETA0_STEP,
@@ -78,13 +82,10 @@ static bool InitializeActuators(HardwareSerial *serial)
 
     for (uint8_t i = 0; i < ACTUATORS; i++)
     {
-        if ((actuators[i] = Actuator::ActuatorFactory(serial, settings[i])) == nullptr)
-        {
-            return false;
-        }
+        status &= (actuators[i] = Actuator::ActuatorFactory(serial, settings[i])) != nullptr;
     }
 
-    return true;
+    return status;
 }
 
 static void ControlLoop(void *arg)
@@ -97,10 +98,7 @@ static void ControlLoop(void *arg)
 
     while (true)
     {
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            joint_state(i) = actuators[i]->GetPosition();
-        }
+        joint_state.head(3) = Actuator::GetPosition(actuators, ACTUATORS);
 
         // Direct kinematics of joint state (calculate end effector position)
         actual_position = wrist_kinematics.DirectKinematics(joint_state.head(3));
@@ -108,7 +106,7 @@ static void ControlLoop(void *arg)
         // Calculates Jacobian matrix, must be called after DirectKinematics
         jacobian_matrix = wrist_kinematics.Jacobian();
 
-        // @TODO do we need gravity contributions here?
+        /// @TODO do we need gravity contributions here?
         // gravity_torque = wrist_kinematics.GravityTorque(joint_state.head(3));
 
         // Calculate position and velocity error
@@ -123,9 +121,7 @@ static void ControlLoop(void *arg)
         {
             if (position_queue.empty())
             {
-                actuators[0]->SetVelocity(0);
-                actuators[1]->SetVelocity(0);
-                actuators[2]->SetVelocity(0);
+                Actuator::SetVelocity(actuators, Vector3f(0, 0, 0), ACTUATORS);
                 vTaskSuspend(controller_handle);
             }
             else
@@ -145,10 +141,7 @@ static void ControlLoop(void *arg)
             joint_state(3) = 0.00;
         }
 
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            actuators[i]->SetVelocity(joint_state(3 + i));
-        }
+        Actuator::SetVelocity(actuators, joint_state.tail(3), ACTUATORS);
 
         vTaskDelay(TIME_IN_MS(CONTROLLER_LOOP_RATE));
     }
@@ -225,29 +218,10 @@ void setup()
 {
     portBASE_TYPE status = pdPASS;
     HardwareSerial *actuator_serial = &Serial1;
-    // Blink built in LED to indicate problem
-    auto error_state = [&](String message) -> void
-    {
-        Serial.println(message);
-
-        delete actuators[0];
-        delete actuators[1];
-        delete actuators[2];
-
-        while (true)
-        {
-            digitalWrite(LED_BUILTIN, LOW);
-            delay(1000);
-            digitalWrite(LED_BUILTIN, HIGH);
-            delay(1000);
-        }
-    };
+    Logger logger(&Serial);
 
     Serial.begin(INTERFACE_BAUDRATE);
-    Serial.print("Starting Robot, firmware version ");
-    Serial.print(VERSION_MAJOR);
-    Serial.print(".");
-    Serial.println(VERSION_MINOR);
+    logger.Log("Starting Robot, firmware version %d.%d", VERSION_MAJOR, VERSION_MINOR);
 
     // Set pin and enable all actuators
     Actuator::SetEnablePin(ENABLE_PIN);
@@ -258,20 +232,21 @@ void setup()
 
     if (status != pdPASS)
     {
-        error_state("Actuators did not initialize properly, check UART or power connection");
+        Actuator::Delete(actuators, ACTUATORS);
+        logger.Error("Actuators did not initialize properly, check UART or power connection");
     }
 
     REGISTER_STEP_COUNTER(0);
     REGISTER_STEP_COUNTER(1);
     REGISTER_STEP_COUNTER(2);
 
-    Serial.println("Actuator motors initialized successfully.");
+    logger.Log("Actuator motors initialized successfully.");
 
     // Turn on LED to indicate correct operation
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
 
-    Serial.println("Set controller inputs to initial states, spawning controller.");
+    logger.Log("Set controller inputs to initial states, spawning controller.");
 
     // Set initial desired state
     desired_position.frame = XRotation(PI);
@@ -281,12 +256,14 @@ void setup()
 
     if (status != pdPASS)
     {
-        error_state("Creation problem");
+        Actuator::Delete(actuators, ACTUATORS);
+        logger.Error("Creation problem");
     }
 
     vTaskStartScheduler();
 
-    error_state("Insufficient RAM");
+    Actuator::Delete(actuators, ACTUATORS);
+    logger.Error("Insufficient RAM");
 }
 
 //------------------------------------------------------------------------------
