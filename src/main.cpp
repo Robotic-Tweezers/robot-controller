@@ -250,7 +250,7 @@ void setup()
 
     // Set initial desired state
     desired_position.frame = XRotation(PI);
-
+    
     status &= xTaskCreate(SerialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 1, &interface_handle);
     status &= xTaskCreate(ControlLoop, NULL, 100 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, &controller_handle);
 

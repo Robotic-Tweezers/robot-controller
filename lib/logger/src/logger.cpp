@@ -18,7 +18,7 @@ void RobotTweezers::Logger::Log(const char *fmt, ...)
     char buffer[256];
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buffer, sizeof(fmt), fmt, args);
+    vsnprintf(buffer, 256, fmt, args);
     SetTimeString();
     strcat(msg_string, buffer);
     serial->println(msg_string);

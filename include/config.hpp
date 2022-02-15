@@ -4,7 +4,7 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 
-#define CONTROLLER_LOOP_RATE 200 // Controller loop rate in ms
+#define CONTROLLER_LOOP_RATE 50 // Controller loop rate in ms
 #define INTERFACE_LOOP_RATE 200 // Serial loop rate in ms
 
 /**
@@ -29,9 +29,9 @@
 #define VELOCITY_GAIN_X 0.00 // Gain for velocity in x
 #define VELOCITY_GAIN_Y 0.00 // Gain for velocity in y
 #define VELOCITY_GAIN_Z 0.00 // Gain for velocity in z
-#define VELOCITY_GAIN_R 0.00 // Gain for roll angular velocity
-#define VELOCITY_GAIN_P 0.00 // Gain for pitch angular velocity
-#define VELOCITY_GAIN_W 0.00 // Gain for yaw angular velocity
+#define VELOCITY_GAIN_R 0.60 // Gain for roll angular velocity
+#define VELOCITY_GAIN_P 0.60 // Gain for pitch angular velocity
+#define VELOCITY_GAIN_W 0.60 // Gain for yaw angular velocity
 
 #define STATE_ERROR 0.01 // Defines the max position error 
 
@@ -47,17 +47,17 @@
 #define THETA1_ADDRESS 0b01 // TMC2209 Driver address according to MS1 and MS2
 #define THETA2_ADDRESS 0b10 // TMC2209 Driver address according to MS1 and MS2
 
-#define THETA0_STEP 10 // Teensy 4.0 step PWM pin for actuator 0
-#define THETA1_STEP 8  // Teensy 4.0 step PWM pin for actuator 1
-#define THETA2_STEP 3  // Teensy 4.0 step PWM pin for actuator 2
+#define THETA0_STEP 2 // Teensy 4.0 step PWM pin for actuator 0
+#define THETA1_STEP 5  // Teensy 4.0 step PWM pin for actuator 1
+#define THETA2_STEP 8  // Teensy 4.0 step PWM pin for actuator 2
 
-#define THETA0_DIRECTION 7 // Direction pin for actuator 0
-#define THETA1_DIRECTION 6 // Direction pin for actuator 1
-#define THETA2_DIRECTION 2 // Direction pin for actuator 2
+#define THETA0_DIRECTION 4 // Direction pin for actuator 0
+#define THETA1_DIRECTION 7 // Direction pin for actuator 1
+#define THETA2_DIRECTION 10 // Direction pin for actuator 2
 
-#define THETA0_STEP_COUNT 11 // Interrupt pin for actuator 0 step count
-#define THETA1_STEP_COUNT 9  // Interrupt pin for actuator 1 step count
-#define THETA2_STEP_COUNT 4  // Interrupt pin for actuator 2 step count
+#define THETA0_STEP_COUNT 3 // Interrupt pin for actuator 0 step count
+#define THETA1_STEP_COUNT 6  // Interrupt pin for actuator 1 step count
+#define THETA2_STEP_COUNT 9  // Interrupt pin for actuator 2 step count
 
 #define THETA0_MOTION_MIN (-PI)
 #define THETA0_MOTION_MAX (PI)

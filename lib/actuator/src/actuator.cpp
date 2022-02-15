@@ -1,4 +1,5 @@
 #include <actuator.hpp>
+#include <cmath>
 
 /// @TODO Verify this
 #define RSENSE 0.11f
@@ -79,13 +80,13 @@ uint8_t RobotTweezers::Actuator::Address(void)
 void RobotTweezers::Actuator::SetVelocity(float velocity)
 {
     // Undefined behaviour when writing zero frequency
-    if (abs(velocity) < MINIMUM_VELOCITY)
+    if (std::abs(velocity) < MINIMUM_VELOCITY)
     {
-        digitalWrite(step_pin, LOW);
+        analogWrite(step_pin, 0);
         return;
     }
 
-    float frequency = (float)STEPS * microstep * abs(velocity) * gear_ratio / (2 * PI);
+    float frequency = (float)STEPS * microstep * std::abs(velocity) * gear_ratio / (2 * PI);
     SetDirection(velocity > 0.00);
     SetPWMFrequency(frequency);
 }
