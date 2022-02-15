@@ -61,7 +61,7 @@ namespace RobotTweezers
          * 
          * @return Eigen::Matrix4f 
          */
-        Eigen::Matrix4f getCoordinates(void);
+        Eigen::Matrix4f GetCoordinates(void);
 
         /**
          * @brief Calculates the translational and rotational error as a 6 dimensional vector

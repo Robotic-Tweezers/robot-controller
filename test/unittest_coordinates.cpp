@@ -24,7 +24,7 @@ void unittest_setCoordinates(void)
 
     TEST_ASSERT_EQUAL(coordinates_test.frame == expected_frame, true);
     TEST_ASSERT_EQUAL(coordinates_test.origin == expected_origin, true);
-    TEST_ASSERT_EQUAL(coordinates_test.getCoordinates() == coords, true);
+    TEST_ASSERT_EQUAL(coordinates_test.GetCoordinates() == coords, true);
 }
 
 void _setup()

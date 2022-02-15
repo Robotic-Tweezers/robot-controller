@@ -4,7 +4,7 @@ extern "C"
 #include <math.h>
 }
 
-Eigen::Matrix3f RobotTweezers::skew3(const Eigen::Vector3f& s)
+Eigen::Matrix3f RobotTweezers::Skew3(const Eigen::Vector3f& s)
 {
     Eigen::Matrix3f skew_sym;
     skew_sym << 
@@ -14,7 +14,7 @@ Eigen::Matrix3f RobotTweezers::skew3(const Eigen::Vector3f& s)
     return skew_sym;
 }
 
-Eigen::Matrix3f RobotTweezers::xRotation(float alpha)
+Eigen::Matrix3f RobotTweezers::XRotation(float alpha)
 {
     Eigen::Matrix3f rotation;
     rotation << 
@@ -24,7 +24,7 @@ Eigen::Matrix3f RobotTweezers::xRotation(float alpha)
     return rotation;
 }
 
-Eigen::Matrix3f RobotTweezers::zRotation(float theta)
+Eigen::Matrix3f RobotTweezers::ZRotation(float theta)
 {
     Eigen::Matrix3f rotation;
     rotation << 
@@ -34,7 +34,7 @@ Eigen::Matrix3f RobotTweezers::zRotation(float theta)
     return rotation;
 }
 
-Eigen::Matrix6f RobotTweezers::vectorToDiagnol6(const float vector[])
+Eigen::Matrix6f RobotTweezers::VectorToDiagnol6(const float vector[])
 {
     Eigen::Matrix6f diagnol;
     diagnol << 
@@ -47,14 +47,22 @@ Eigen::Matrix6f RobotTweezers::vectorToDiagnol6(const float vector[])
     return diagnol;
 }
 
-float RobotTweezers::Kahan::problem1(const Eigen::Vector3f& s, const Eigen::Vector3f& t)
+Eigen::Matrix3f RobotTweezers::EulerXYZToRotation(const float x, const float y, const float z)
+{
+    Eigen::AngleAxisf x_rotation(x, Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf y_rotation(y, Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf z_rotation(z, Eigen::Vector3f::UnitZ());
+    return (x_rotation * y_rotation * z_rotation).toRotationMatrix();
+}
+
+float RobotTweezers::Kahan::Problem1(const Eigen::Vector3f& s, const Eigen::Vector3f& t)
 {
     Eigen::Vector3f u = s.normalized() - t.normalized();
     Eigen::Vector3f v = s.normalized() + t.normalized();
     return atanf(u.norm() / v.norm()) * 2.00F;
 }
 
-float RobotTweezers::Kahan::problem2(const Eigen::Vector3f& s_unit, Eigen::Vector3f& u, Eigen::Vector3f& v, bool* valid)
+float RobotTweezers::Kahan::Problem2(const Eigen::Vector3f& s_unit, Eigen::Vector3f& u, Eigen::Vector3f& v, bool* valid)
 {
     u.normalize();
     v.normalize();
@@ -68,14 +76,14 @@ float RobotTweezers::Kahan::problem2(const Eigen::Vector3f& s_unit, Eigen::Vecto
     return 0.00F;
 }
 
-std::pair<float[2], float[2]> RobotTweezers::Kahan::problem3
+std::pair<float[2], float[2]> RobotTweezers::Kahan::Problem3
     (const Eigen::Vector3f& s_unit, const Eigen::Vector3f& t_unit, const Eigen::Vector3f& u, const Eigen::Vector3f& v)
 {
     std::pair<float[2], float[2]> ret;
     return ret;
 }
 
-float RobotTweezers::Kahan::problem4(float a, float b, float c)
+float RobotTweezers::Kahan::Problem4(float a, float b, float c)
 {
     return 0.00F;
 }
