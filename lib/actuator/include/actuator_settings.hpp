@@ -15,7 +15,6 @@ namespace RobotTweezers
         uint8_t step;
         uint8_t direction;
         uint8_t uart_address;
-        uint8_t step_counter;
         struct
         {
             float min;

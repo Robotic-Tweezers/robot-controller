@@ -50,7 +50,6 @@ static bool InitializeActuators(HardwareSerial *serial)
         .step = THETA0_STEP,
         .direction = THETA0_DIRECTION,
         .uart_address = THETA0_ADDRESS,
-        .step_counter = THETA0_STEP_COUNT,
         .motion_limits = {
             .min = THETA0_MOTION_MIN,
             .max = THETA0_MOTION_MAX
@@ -61,7 +60,6 @@ static bool InitializeActuators(HardwareSerial *serial)
         .step = THETA1_STEP,
         .direction = THETA1_DIRECTION,
         .uart_address = THETA1_ADDRESS,
-        .step_counter = THETA1_STEP_COUNT,
         .motion_limits = {
             .min = THETA1_MOTION_MIN,
             .max = THETA1_MOTION_MAX
@@ -72,7 +70,6 @@ static bool InitializeActuators(HardwareSerial *serial)
         .step = THETA2_STEP,
         .direction = THETA2_DIRECTION,
         .uart_address = THETA2_ADDRESS,
-        .step_counter = THETA2_STEP_COUNT,
         .motion_limits = {
             .min = THETA2_MOTION_MIN,
             .max = THETA2_MOTION_MAX
@@ -225,10 +222,15 @@ void setup()
 
     // Set pin and enable all actuators
     Actuator::SetEnablePin(ENABLE_PIN);
-    Actuator::Enable();
 
     actuator_serial->begin(ACTUATOR_BAUDRATE);
     status &= InitializeActuators(actuator_serial);
+
+    for (auto actuator : actuators)
+    {
+        actuator ? logger.Log("Stepper initialized with address %d", actuator->Address())
+            : logger.Log("Stepper is NULL");
+    }
 
     if (status != pdPASS)
     {
@@ -236,11 +238,8 @@ void setup()
         logger.Error("Actuators did not initialize properly, check UART or power connection");
     }
 
-    REGISTER_STEP_COUNTER(0);
-    REGISTER_STEP_COUNTER(1);
-    REGISTER_STEP_COUNTER(2);
-
     logger.Log("Actuator motors initialized successfully.");
+    Actuator::Enable();
 
     // Turn on LED to indicate correct operation
     pinMode(LED_BUILTIN, OUTPUT);
@@ -248,9 +247,8 @@ void setup()
 
     logger.Log("Set controller inputs to initial states, spawning controller.");
 
-    // Set initial desired state
-    desired_position.frame = XRotation(PI);
-    
+    desired_position.frame = XRotation(PI) * ZRotation(PI / 2);
+
     status &= xTaskCreate(SerialInterface, NULL, 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 1, &interface_handle);
     status &= xTaskCreate(ControlLoop, NULL, 100 * configMINIMAL_SECURE_STACK_SIZE, NULL, 2, &controller_handle);
 
