@@ -26,17 +26,3 @@ void unittest_setCoordinates(void)
     TEST_ASSERT_EQUAL(coordinates_test.origin == expected_origin, true);
     TEST_ASSERT_EQUAL(coordinates_test.GetCoordinates() == coords, true);
 }
-
-void _setup()
-{
-    // NOTE!!! Wait for >2 secs
-    // if board doesn't support software reset via Serial.DTR/RTS
-    delay(2000);
-    UNITY_BEGIN();
-
-}
-
-void _loop()
-{
-    UNITY_END();
-}

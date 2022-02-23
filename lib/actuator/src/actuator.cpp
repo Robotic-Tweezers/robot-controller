@@ -6,55 +6,46 @@
 
 uint8_t RobotTweezers::Actuator::enable = 12;
 
-RobotTweezers::Actuator::Actuator() : uart(nullptr, RSENSE, 0b00) {}
+RobotTweezers::Actuator::Actuator() : driver(), uart(nullptr, RSENSE, 0b00) {}
 
 RobotTweezers::Actuator::Actuator(HardwareSerial *serial, ActuatorSettings &settings)
-    : uart(serial, RSENSE, settings.uart_address)
+    : driver(AccelStepper::DRIVER, settings.step, settings.direction), uart(serial, RSENSE, settings.uart_address)
 {
-    step_pin = settings.step;
-    direction_pin = settings.direction;
-    motion_limits.min = settings.motion_limits.min;
-    motion_limits.max = settings.motion_limits.max;
-    gear_ratio = settings.gear_ratio;
-    step_counter_pin = settings.step_counter;
+    SetMotionLimits(settings.motion_limits.min, settings.motion_limits.max);
+    SetGearRatio(settings.gear_ratio);
     Initialize();
 }
 
-RobotTweezers::Actuator::Actuator(HardwareSerial *serial, uint8_t address, uint8_t step_pin, uint8_t direction_pin)
-    : step_pin(step_pin), direction_pin(direction_pin), uart(serial, RSENSE, address)
+void RobotTweezers::Actuator::SetMicrostepResolution(uint16_t microstep)
 {
-    SetGearRatio(1);
-    SetMotionLimits(-PI, PI);
-    Initialize();
+    this->microstep = microstep;
+    uart.microsteps(microstep);
 }
 
-void RobotTweezers::Actuator::SetDirection(bool direction)
+float RobotTweezers::Actuator::StepsToRadians(long steps, float gear_ratio, uint16_t microstep)
 {
-    this->direction = direction;
-    digitalWrite(direction_pin, direction);
+    return microstep != 0 ? 2.00f * PI * steps / (STEPS * microstep * gear_ratio) : 0.00;
 }
 
-void RobotTweezers::Actuator::SetPWMFrequency(float frequency)
+long RobotTweezers::Actuator::RadiansToSteps(float radians, float gear_ratio, uint16_t microstep)
 {
-    analogWriteFrequency(step_pin, frequency);
-    analogWrite(step_pin, 128);
+    return microstep != 0 ? radians * STEPS * microstep * gear_ratio / (2.00f * PI) : 0.00;
 }
 
 bool RobotTweezers::Actuator::Initialize(void)
 {
     // uint32_t gconf_data = 0x00C0;
-    microstep_count = 0;
-    microstep = 256;
 
-    pinMode(step_pin, OUTPUT);
-    pinMode(direction_pin, OUTPUT);
+    SetMicrostepResolution(64);
+
+    driver.setCurrentPosition(0);
+    driver.setMaxSpeed(RadiansToSteps(15, gear_ratio, microstep));
+    // driver.setAcceleration(1000);
+
     SetVelocity(0.00);
-
+    
     uart.begin();
-
     uart.SLAVECONF(0x0000);
-    uart.microsteps(microstep);
-
     // uart.VACTUAL(5000);
     // uart.GCONF(gconf_data);
     // uart.SLAVECONF(0x0000);
@@ -72,6 +63,7 @@ bool RobotTweezers::Actuator::Initialize(void)
     return true;
 }
 
+
 uint8_t RobotTweezers::Actuator::Address(void)
 {
     return uart.ms2() << 1 | uart.ms1();
@@ -79,21 +71,19 @@ uint8_t RobotTweezers::Actuator::Address(void)
 
 void RobotTweezers::Actuator::SetVelocity(float velocity)
 {
+    long velocity_steps = RadiansToSteps(velocity, gear_ratio, microstep);
+    driver.setSpeed(velocity_steps);
     // Undefined behaviour when writing zero frequency
-    if (std::abs(velocity) < MINIMUM_VELOCITY)
-    {
-        analogWrite(step_pin, 0);
-        return;
-    }
-
-    float frequency = (float)STEPS * microstep * std::abs(velocity) * gear_ratio / (2 * PI);
-    SetDirection(velocity > 0.00);
-    SetPWMFrequency(frequency);
+    //if (std::abs(velocity) > MINIMUM_VELOCITY)
+    //{
+    //    driver.runSpeed();
+    //}
 }
 
 float RobotTweezers::Actuator::GetPosition(void)
 {
-    return microstep != 0 ? 2.00f * PI * microstep_count / (STEPS * microstep * gear_ratio) : 0.00;
+    long steps = driver.currentPosition();
+    return StepsToRadians(steps, gear_ratio, microstep);
 }
 
 void RobotTweezers::Actuator::SetMotionLimits(float min, float max)
@@ -110,13 +100,8 @@ void RobotTweezers::Actuator::SetGearRatio(float gear_ratio)
 RobotTweezers::Actuator *RobotTweezers::Actuator::ActuatorFactory(HardwareSerial *serial, ActuatorSettings &settings)
 {
     TMC2209Stepper connection(serial, RSENSE, settings.uart_address);
+    // If we cannot connect over UART, something is wrong
     return connection.test_connection() == 0 ? new Actuator(serial, settings) : nullptr;
-}
-
-RobotTweezers::Actuator *RobotTweezers::Actuator::ActuatorFactory(HardwareSerial *serial, uint8_t address, uint8_t step, uint8_t direction)
-{
-    TMC2209Stepper connection(serial, RSENSE, address);
-    return connection.test_connection() == 0 ? new Actuator(serial, address, step, direction) : nullptr;
 }
 
 void RobotTweezers::Actuator::SetEnablePin(uint8_t enable)
@@ -160,4 +145,13 @@ Eigen::Vector3f RobotTweezers::Actuator::GetPosition(RobotTweezers::Actuator *ac
     }
 
     return position;
+}
+
+
+void RobotTweezers::Actuator::Run(Actuator *actuators[], uint8_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        actuators[i]->driver.runSpeed();
+    }
 }

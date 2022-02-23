@@ -51,6 +51,9 @@
         "forward_list": "cpp",
         "unordered_set": "cpp",
         "string_view": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "csignal": "cpp",
+        "iomanip": "cpp",
+        "mutex": "cpp"
     }
 }

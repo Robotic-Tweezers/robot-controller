@@ -2,6 +2,8 @@
 #include <unity.h>
 #include <actuator.hpp>
 
+using namespace RobotTweezers;
+
 extern void unittest_skew3(void);
 extern void unittest_xRotation(void);
 extern void unittest_zRotation(void);
@@ -11,41 +13,11 @@ extern void unittest_Kahan_problem3(void);
 extern void unittest_Kahan_problem4(void);
 extern void unittest_setCoordinates(void);
 
-#define actuator_serial Serial1
-#define THETA0_ADDRESS 0b00
-#define THETA1_ADDRESS 0b01
-#define THETA2_ADDRESS 0b10
+extern void unittest_StepperControl(void);
 
-using namespace RobotTweezers;
-
-void UnitTest_ActuatorPinConnection(void)
-{
-    // address, step, direction, step_count
-    uint8_t device_pins[3][4] = {
-        {THETA0_ADDRESS, 3, 2, 4}, 
-        {THETA1_ADDRESS, 8, 6, 9},
-        {THETA2_ADDRESS, 10, 7, 11} 
-    };
-
-    //Actuator::
-    for (uint8_t address = 0b00; address < 0b11; address++)
-    {
-        Actuator* actuator = Actuator::ActuatorFactory(&actuator_serial, address, device_pins[address][1], device_pins[address][2]);
-        pinMode(device_pins[address][3], INPUT_PULLUP);
-        digitalWrite(device_pins[address][1], LOW);
-        digitalWrite(device_pins[address][2], LOW);
-        TEST_ASSERT_EQUAL(actuator->uart->test_connection(), 0);
-        TEST_ASSERT_EQUAL(actuator->Address(), address);
-        uint32_t io_state = actuator->uart->IOIN();
-        bool enable = io_state & 1;
-        bool step = (io_state >> 7) & 1;
-        bool direction = (io_state >> 9) & 1;
-        TEST_ASSERT_EQUAL(enable, false);
-        TEST_ASSERT_EQUAL(step, false);
-        TEST_ASSERT_EQUAL(direction, false);
-        // delete actuator;
-    }
-}
+void (*unittests[])(void) = {
+    unittest_StepperControl
+};
 
 void setup()
 {
@@ -54,23 +26,10 @@ void setup()
     delay(2000);
     UNITY_BEGIN();
 
-    /*
-    // utils.hpp
-    RUN_TEST(unittest_skew3);
-    RUN_TEST(unittest_xRotation);
-    RUN_TEST(unittest_zRotation);
-    RUN_TEST(unittest_Kahan_problem1);
-    RUN_TEST(unittest_Kahan_problem2);
-
-    // coordinates.hpp
-    RUN_TEST(unittest_setCoordinates);
-     */
-    auto test = [](void) -> void
+    for (auto func : unittests)
     {
-        TEST_ASSERT_EQUAL(true, true);
-    };
-    RUN_TEST(test);
-    RUN_TEST(UnitTest_ActuatorPinConnection);
+        RUN_TEST(func);
+    }
 }
 
 void loop()
