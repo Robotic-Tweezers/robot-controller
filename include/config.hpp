@@ -4,8 +4,9 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 0
 
-#define CONTROLLER_LOOP_RATE 50 // Controller loop rate in ms
-#define INTERFACE_LOOP_RATE 200 // Serial loop rate in ms
+#define PWM_LOOP_RATE 100 // Stepper PWM rate in us
+#define CONTROLLER_LOOP_RATE 100 // Controller loop rate in ms
+#define INTERFACE_LOOP_RATE 200  // Serial loop rate in ms
 
 /**
  * @brief Interface configurations
@@ -29,9 +30,9 @@
 #define VELOCITY_GAIN_X 0.00 // Gain for velocity in x
 #define VELOCITY_GAIN_Y 0.00 // Gain for velocity in y
 #define VELOCITY_GAIN_Z 0.00 // Gain for velocity in z
-#define VELOCITY_GAIN_R 0.60 // Gain for roll angular velocity
-#define VELOCITY_GAIN_P 0.60 // Gain for pitch angular velocity
-#define VELOCITY_GAIN_W 0.60 // Gain for yaw angular velocity
+#define VELOCITY_GAIN_R 0.00 // Gain for roll angular velocity
+#define VELOCITY_GAIN_P 0.00 // Gain for pitch angular velocity
+#define VELOCITY_GAIN_W 0.00 // Gain for yaw angular velocity
 
 #define STATE_ERROR 0.01 // Defines the max position error
 

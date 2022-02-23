@@ -74,15 +74,16 @@ void RobotTweezers::Actuator::SetVelocity(float velocity)
     long velocity_steps = RadiansToSteps(velocity, gear_ratio, microstep);
     driver.setSpeed(velocity_steps);
     // Undefined behaviour when writing zero frequency
-    if (std::abs(velocity) > MINIMUM_VELOCITY)
-    {
-        driver.runSpeed();
-    }
+    //if (std::abs(velocity) > MINIMUM_VELOCITY)
+    //{
+    //    driver.runSpeed();
+    //}
 }
 
 float RobotTweezers::Actuator::GetPosition(void)
 {
-    return driver.currentPosition();
+    long steps = driver.currentPosition();
+    return StepsToRadians(steps, gear_ratio, microstep);
 }
 
 void RobotTweezers::Actuator::SetMotionLimits(float min, float max)

@@ -1,12 +1,12 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <TimeLib.h>
-#include <queue>
+#include <FreeRTOS_TEENSY4.h>
 #include <config.hpp>
 #include <kinematic.hpp>
 #include <coordinates.hpp>
 #include <actuator.hpp>
 #include <logger.hpp>
+#include <queue>
 
 #define TIME_IN_MS(TIME) (TIME) * configTICK_RATE_HZ / 1000UL
 #define TIME_IN_US(TIME) (TIME) * configTICK_RATE_HZ / 1000000UL
@@ -14,6 +14,11 @@
 using namespace std;
 using namespace Eigen;
 using namespace RobotTweezers;
+
+// Task handles
+TaskHandle_t run_stepper_handle;
+TaskHandle_t controller_handle;
+TaskHandle_t interface_handle;
 
 // Constant gain matricies
 const Matrix6f kp = VectorToDiagnol6((float[]){
@@ -38,26 +43,9 @@ Coordinates desired_position;
 Vector6f desired_velocity;
 Vector6f joint_state;
 
-// Controller subcalculations
-Vector3f gravity_torque;
-Kinematic wrist_kinematics;
-Coordinates actual_position;
-Vector6f position_error, velocity_error, state_error;
-MatrixXf jacobian_matrix;
-
-// Serial 
-Stream *client_interface;
-StaticJsonDocument<256> gui_command;
-String json_command, response;
-
-// Timing and syncronization
-static uint32_t last_cycle = 0;
-static bool controller_enable = true;
-
-void setup(void)
+static bool InitializeActuators(HardwareSerial *serial)
 {
-    HardwareSerial *actuator_serial = &Serial1;
-    Logger logger(&Serial);
+    bool status = true;
     ActuatorSettings settings[ACTUATORS];
     settings[0] = ActuatorSettings {
         .step = THETA0_STEP,
@@ -89,101 +77,33 @@ void setup(void)
         },
         .gear_ratio = THETA2_GEAR_RATIO
     };
-    bool status = true;
-
-    Serial.begin(INTERFACE_BAUDRATE);
-    logger.Log("Starting Robot, firmware version %d.%d", VERSION_MAJOR, VERSION_MINOR);
-
-    // Set pin and enable all actuators
-    Actuator::SetEnablePin(ENABLE_PIN);
-
-    actuator_serial->begin(ACTUATOR_BAUDRATE);
 
     for (uint8_t i = 0; i < ACTUATORS; i++)
     {
-        if ((actuators[i] = Actuator::ActuatorFactory(actuator_serial, settings[i])) != nullptr)
-        {
-            logger.Log("Stepper initialized with address %d", actuators[i]->Address());
-        }
-        else
-        {
-            logger.Log("Stepper is NULL");
-            status = false;
-        }
+        status &= (actuators[i] = Actuator::ActuatorFactory(serial, settings[i])) != nullptr;
     }
 
-    if (status != true)
-    {
-        Actuator::Delete(actuators, ACTUATORS);
-        logger.Error("Actuators did not initialize properly, check UART or power connection");
-    }
-
-    logger.Log("Actuator motors initialized successfully.");
-    Actuator::Enable();
-
-    // Turn on LED to indicate correct operation
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH);
-
-    logger.Log("Set controller inputs to initial states, spawning controller.");
-
-    desired_position.frame = XRotation(PI) * ZRotation(PI / 2);
-
-    if (status != true)
-    {
-        Actuator::Delete(actuators, ACTUATORS);
-        logger.Error("Creation problem");
-    }
-
-    client_interface = &Serial;
+    return status;
 }
 
-void loop(void)
+static void RunSteppers(void *arg)
 {
-    if (client_interface->available() > 0 && (millis() - last_cycle >= INTERFACE_LOOP_RATE))
+    while (true)
     {
-        last_cycle = millis();
-        json_command = client_interface->readString();
-        if (deserializeJson(gui_command, json_command) == nullptr)
-        {
-            // If sender includes version keyword, respond with firmware verison
-            if (gui_command.containsKey("version"))
-            {
-                char temp_buffer[24];
-                sprintf(temp_buffer, "Robot Tweezers v%d.%d", VERSION_MAJOR, VERSION_MINOR);
-                gui_command["version"] = temp_buffer;
-                serializeJson(gui_command, response);
-                client_interface->print(response);
-            }
-
-            // Enable/Disable actuators
-            if (gui_command.containsKey("enable_actuators"))
-            {
-                gui_command["enable_actuators"] ? Actuator::Enable() : Actuator::Disable();
-            }
-
-            if (gui_command.containsKey("position"))
-            {
-                Coordinates new_coords;
-                float roll_anlge = gui_command["position"]["roll"];
-                float pitch_angle = gui_command["position"]["pitch"];
-                float yaw_angle = gui_command["position"]["yaw"];
-                new_coords.frame = EulerXYZToRotation(roll_anlge, pitch_angle, yaw_angle);
-                if (position_queue.empty())
-                {
-                    // Resume controller
-                    controller_enable = true;
-                }
-
-                if (position_queue.size() <= QUEUE_MAX_SIZE)
-                {
-                    position_queue.push(new_coords);
-                }
-            }
-        }
+        Actuator::Run(actuators, ACTUATORS);
+        vTaskDelay(TIME_IN_US(PWM_LOOP_RATE));
     }
+}
 
-    if (controller_enable)
+static void ControlLoop(void *arg)
+{
+    Vector3f gravity_torque;
+    Kinematic wrist_kinematics;
+    Coordinates actual_position;
+    Vector6f position_error, velocity_error, state_error;
+    MatrixXf jacobian_matrix;
+
+    while (true)
     {
         joint_state.head(3) = Actuator::GetPosition(actuators, ACTUATORS);
 
@@ -209,7 +129,7 @@ void loop(void)
             if (position_queue.empty())
             {
                 Actuator::SetVelocity(actuators, Vector3f(0, 0, 0), ACTUATORS);
-                controller_enable = false;
+                vTaskSuspend(controller_handle);
             }
             else
             {
@@ -229,5 +149,136 @@ void loop(void)
         }
 
         Actuator::SetVelocity(actuators, joint_state.tail(3), ACTUATORS);
+
+        vTaskDelay(TIME_IN_MS(CONTROLLER_LOOP_RATE));
     }
+}
+
+static void SerialInterface(void *arg)
+{
+    Stream *client_interface = static_cast<Stream *>(arg);
+    StaticJsonDocument<256> gui_command;
+    String json_command, response;
+
+    while (true)
+    {
+        if (client_interface->available() > 0)
+        {
+            json_command = client_interface->readString();
+            if (deserializeJson(gui_command, json_command))
+            {
+                // Error in decoding message
+                continue;
+            }
+
+            // If sender includes version keyword, respond with firmware verison
+            if (gui_command.containsKey("version"))
+            {
+                char temp_buffer[24];
+                sprintf(temp_buffer, "Robot Tweezers v%d.%d", VERSION_MAJOR, VERSION_MINOR);
+                gui_command["version"] = temp_buffer;
+                serializeJson(gui_command, response);
+                client_interface->print(response);
+            }
+
+            if (gui_command.containsKey("actuators"))
+            {
+                for (uint8_t i = 0; i < ACTUATORS; i++)
+                {
+                    gui_command["actuators"][i]["position"] = actuators[i]->GetPosition();
+                    serializeJson(gui_command, response);
+                    client_interface->print(response);
+                }
+            }
+
+            // Enable/Disable actuators
+            if (gui_command.containsKey("enable_actuators"))
+            {
+                gui_command["enable_actuators"] ? Actuator::Enable() : Actuator::Disable();
+            }
+
+            if (gui_command.containsKey("position"))
+            {
+                Coordinates new_coords;
+                float roll_anlge = gui_command["position"]["roll"];
+                float pitch_angle = gui_command["position"]["pitch"];
+                float yaw_angle = gui_command["position"]["yaw"];
+                new_coords.frame = EulerXYZToRotation(roll_anlge, pitch_angle, yaw_angle);
+                if (position_queue.empty())
+                {
+                    // Resume controller
+                    vTaskResume(controller_handle);
+                }
+
+                if (position_queue.size() <= QUEUE_MAX_SIZE)
+                {
+                    position_queue.push(new_coords);
+                }
+            }
+        }
+
+        vTaskDelay(TIME_IN_MS(INTERFACE_LOOP_RATE));
+    }
+}
+
+void setup()
+{
+    portBASE_TYPE status = pdPASS;
+    HardwareSerial *actuator_serial = &Serial1;
+    Logger logger(&Serial);
+
+    Serial.begin(INTERFACE_BAUDRATE);
+    logger.Log("Starting Robot, firmware version %d.%d", VERSION_MAJOR, VERSION_MINOR);
+
+    // Set pin and enable all actuators
+    Actuator::SetEnablePin(ENABLE_PIN);
+
+    actuator_serial->begin(ACTUATOR_BAUDRATE);
+    status &= InitializeActuators(actuator_serial);
+
+    for (auto actuator : actuators)
+    {
+        actuator ? logger.Log("Stepper initialized with address %d", actuator->Address())
+            : logger.Log("Stepper is NULL");
+    }
+
+    if (status != pdPASS)
+    {
+        Actuator::Delete(actuators, ACTUATORS);
+        logger.Error("Actuators did not initialize properly, check UART or power connection");
+    }
+
+    logger.Log("Actuator motors initialized successfully.");
+    Actuator::Enable();
+
+    // Turn on LED to indicate correct operation
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    logger.Log("Set controller inputs to initial states, spawning controller.");
+
+    desired_position.frame = XRotation(PI);
+
+    status &= xTaskCreate(RunSteppers, nullptr, configMINIMAL_SECURE_STACK_SIZE, nullptr, 1, &run_stepper_handle);
+    status &= xTaskCreate(SerialInterface, nullptr, 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 2, &interface_handle);
+    status &= xTaskCreate(ControlLoop, nullptr, 100 * configMINIMAL_SECURE_STACK_SIZE, nullptr, 3, &controller_handle);
+
+    if (status != pdPASS)
+    {
+        Actuator::Delete(actuators, ACTUATORS);
+        logger.Error("Creation problem");
+    }
+
+    vTaskStartScheduler();
+
+    Actuator::Delete(actuators, ACTUATORS);
+    logger.Error("Insufficient RAM");
+}
+
+//------------------------------------------------------------------------------
+// WARNING idle loop has a very small stack (configMINIMAL_STACK_SIZE)
+// loop must never block
+void loop()
+{
+    // Not used.
 }
