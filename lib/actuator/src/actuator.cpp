@@ -36,16 +36,16 @@ bool RobotTweezers::Actuator::Initialize(void)
 {
     // uint32_t gconf_data = 0x00C0;
 
-    driver.setCurrentPosition(0);
-    driver.setMaxSpeed(5000);
-    driver.setAcceleration(1000);
-
     SetMicrostepResolution(64);
+
+    driver.setCurrentPosition(0);
+    driver.setMaxSpeed(RadiansToSteps(15, gear_ratio, microstep));
+    // driver.setAcceleration(1000);
+
     SetVelocity(0.00);
     
     uart.begin();
     uart.SLAVECONF(0x0000);
-
     // uart.VACTUAL(5000);
     // uart.GCONF(gconf_data);
     // uart.SLAVECONF(0x0000);
@@ -71,7 +71,8 @@ uint8_t RobotTweezers::Actuator::Address(void)
 
 void RobotTweezers::Actuator::SetVelocity(float velocity)
 {
-    driver.setSpeed(RadiansToSteps(velocity, gear_ratio, microstep));
+    long velocity_steps = RadiansToSteps(velocity, gear_ratio, microstep);
+    driver.setSpeed(velocity_steps);
     // Undefined behaviour when writing zero frequency
     if (std::abs(velocity) > MINIMUM_VELOCITY)
     {
@@ -143,4 +144,13 @@ Eigen::Vector3f RobotTweezers::Actuator::GetPosition(RobotTweezers::Actuator *ac
     }
 
     return position;
+}
+
+
+void RobotTweezers::Actuator::Run(Actuator *actuators[], uint8_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        actuators[i]->driver.runSpeed();
+    }
 }

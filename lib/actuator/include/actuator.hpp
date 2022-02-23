@@ -26,7 +26,6 @@ namespace RobotTweezers
     {
     private:
 
-
         /** @brief Motion limits */
         struct
         {
@@ -188,6 +187,8 @@ namespace RobotTweezers
          * @return Eigen::Vector3f  Position of each Actuator
          */
         static Eigen::Vector3f GetPosition(Actuator *actuators[], uint8_t size);
+
+        static void Run(Actuator *actuators[], uint8_t size);
     };
 }
 

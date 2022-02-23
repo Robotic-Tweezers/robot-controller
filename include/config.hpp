@@ -9,7 +9,7 @@
 
 /**
  * @brief Interface configurations
- * 
+ *
  */
 #define QUEUE_MAX_SIZE 100
 #define MAX_JSON_SIZE 256
@@ -33,11 +33,11 @@
 #define VELOCITY_GAIN_P 0.60 // Gain for pitch angular velocity
 #define VELOCITY_GAIN_W 0.60 // Gain for yaw angular velocity
 
-#define STATE_ERROR 0.01 // Defines the max position error 
+#define STATE_ERROR 0.01 // Defines the max position error
 
 /**
  * @brief Actuator configurations
- * 
+ *
  */
 #define ACTUATORS 3
 #define ACTUATOR_BAUDRATE 460800
@@ -48,16 +48,16 @@
 #define THETA2_ADDRESS 0b10 // TMC2209 Driver address according to MS1 and MS2
 
 #define THETA0_STEP 2 // Teensy 4.0 step PWM pin for actuator 0
-#define THETA1_STEP 5  // Teensy 4.0 step PWM pin for actuator 1
-#define THETA2_STEP 8  // Teensy 4.0 step PWM pin for actuator 2
+#define THETA1_STEP 5 // Teensy 4.0 step PWM pin for actuator 1
+#define THETA2_STEP 8 // Teensy 4.0 step PWM pin for actuator 2
 
-#define THETA0_DIRECTION 4 // Direction pin for actuator 0
-#define THETA1_DIRECTION 7 // Direction pin for actuator 1
+#define THETA0_DIRECTION 4  // Direction pin for actuator 0
+#define THETA1_DIRECTION 7  // Direction pin for actuator 1
 #define THETA2_DIRECTION 10 // Direction pin for actuator 2
 
 #define THETA0_STEP_COUNT 3 // Interrupt pin for actuator 0 step count
-#define THETA1_STEP_COUNT 6  // Interrupt pin for actuator 1 step count
-#define THETA2_STEP_COUNT 9  // Interrupt pin for actuator 2 step count
+#define THETA1_STEP_COUNT 6 // Interrupt pin for actuator 1 step count
+#define THETA2_STEP_COUNT 9 // Interrupt pin for actuator 2 step count
 
 #define THETA0_MOTION_MIN (-PI)
 #define THETA0_MOTION_MAX (PI)
@@ -73,10 +73,10 @@
 // Add dummy values for linting and if we get off target testing working
 #ifndef LENGTH1
 #define LENGTH1 18 // cm
-#endif // LENGTH1
+#endif             // LENGTH1
 
 #ifndef LENGTH2
 #define LENGTH2 9.5 // cm
-#endif // LENGTH1
+#endif              // LENGTH1
 
 #endif // _CONFIG_HPP_
