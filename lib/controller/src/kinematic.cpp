@@ -46,8 +46,21 @@ RobotTweezers::Coordinates RobotTweezers::Kinematic::DirectKinematics(const floa
     return end_effector;
 }
 
-Eigen::Vector3f InverseKinematics(const RobotTweezers::Coordinates &end_effector)
+Eigen::Vector3f RobotTweezers::Kinematic::InverseKinematics(const RobotTweezers::Coordinates &end_effector)
 {
+    //Eigen::Vector3f i_unit_base = base_frame * Eigen::Vector3f(1, 0, 0);
+    Eigen::Vector3f k_unit_base = base_frame * Eigen::Vector3f(0, 0, 1);
+    //Eigen::Vector3f i_unit_end = end_effector.frame * Eigen::Vector3f(1, 0, 0);
+    Eigen::Vector3f k_unit_end = end_effector.frame * Eigen::Vector3f(0, 0, 1);
+
+    // If base and end effector k-axes are in the same direction, one solution available
+    if ((RobotTweezers::Skew3(k_unit_base) * k_unit_end).isApprox(Eigen::Vector3f(0, 0, 0), 0.01))
+    {
+        if (std::abs(k_unit_base.dot(k_unit_end) - 1.0f) == 0.01)
+        {
+            return Eigen::Vector3f();
+        }
+    }
     return Eigen::Vector3f();
 }
 
