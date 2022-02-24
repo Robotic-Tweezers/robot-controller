@@ -42,6 +42,12 @@ queue<Coordinates> position_queue;
 Coordinates desired_position;
 Vector6f desired_velocity;
 Vector6f joint_state;
+/** @brief The DH transformation parameters for the wrist manipulator (a is omitted) */
+float dh_table[3][3] = {
+    {0, LENGTH1, PI / 2},
+    {0, 0, -PI / 2},
+    {0, LENGTH2, 0},
+};
 
 static bool InitializeActuators(HardwareSerial *serial)
 {
@@ -98,7 +104,6 @@ static void RunSteppers(void *arg)
 static void ControlLoop(void *arg)
 {
     Vector3f gravity_torque;
-    Kinematic wrist_kinematics;
     Coordinates actual_position;
     Vector6f position_error, velocity_error, state_error;
     MatrixXf jacobian_matrix;
@@ -107,14 +112,16 @@ static void ControlLoop(void *arg)
     {
         joint_state.head(3) = Actuator::GetPosition(actuators, ACTUATORS);
 
+        Kinematic::UpdateDenavitHartenbergTable(dh_table, joint_state.head(3));
+
         // Direct kinematics of joint state (calculate end effector position)
-        actual_position = wrist_kinematics.DirectKinematics(joint_state.head(3));
+        actual_position = Kinematic::DirectKinematics(dh_table);
 
         // Calculates Jacobian matrix, must be called after DirectKinematics
-        jacobian_matrix = wrist_kinematics.Jacobian();
+        jacobian_matrix = Kinematic::Jacobian(dh_table, actual_position);
 
         /// @TODO do we need gravity contributions here?
-        // gravity_torque = wrist_kinematics.GravityTorque(joint_state.head(3));
+        // gravity_torque = Kinematic::GravityTorque(joint_state.head(3));
 
         // Calculate position and velocity error
         position_error = desired_position - actual_position;

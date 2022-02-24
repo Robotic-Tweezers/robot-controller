@@ -33,7 +33,7 @@ namespace RobotTweezers
          * @param frame The coordinate frame
          * @param origin The coordinate origin
          */
-        Coordinates(const Eigen::Matrix3f& frame, Eigen::Vector3f& origin);
+        Coordinates(const Eigen::Matrix3f frame, Eigen::Vector3f origin);
 
         /**
          * @brief Construct a new Coordinates object
@@ -66,10 +66,16 @@ namespace RobotTweezers
         /**
          * @brief Calculates the translational and rotational error as a 6 dimensional vector
          * 
+         * @todo Verify this function, seeing issues with controller when using this to calculate error 
+         * 
          * @param op Coordinates to subtract from object
          * @return Eigen::Vector6f 
          */
         Eigen::Vector6f operator-(const Coordinates& op);
+
+        Coordinates operator*(const Coordinates& op);
+
+        Coordinates& operator*=(const Coordinates& op);
     };
 }
 
