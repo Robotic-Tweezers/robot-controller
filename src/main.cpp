@@ -40,7 +40,7 @@ const Matrix6f kv = VectorToDiagnol6((float[]){
 Actuator *actuators[ACTUATORS];
 queue<Coordinates> position_queue;
 Coordinates desired_position;
-Vector6f desired_velocity;
+Vector3f desired_velocity;
 Vector6f joint_state;
 /** @brief The DH transformation parameters for the wrist manipulator (a is omitted) */
 float dh_table[3][3] = {
@@ -53,36 +53,30 @@ static bool InitializeActuators(HardwareSerial *serial)
 {
     bool status = true;
     ActuatorSettings settings[ACTUATORS];
-    settings[0] = ActuatorSettings {
+    settings[0] = ActuatorSettings{
         .step = THETA0_STEP,
         .direction = THETA0_DIRECTION,
         .uart_address = THETA0_ADDRESS,
         .motion_limits = {
             .min = THETA0_MOTION_MIN,
-            .max = THETA0_MOTION_MAX
-        },
-        .gear_ratio = THETA0_GEAR_RATIO
-    };
-    settings[1] = ActuatorSettings {
+            .max = THETA0_MOTION_MAX},
+        .gear_ratio = THETA0_GEAR_RATIO};
+    settings[1] = ActuatorSettings{
         .step = THETA1_STEP,
         .direction = THETA1_DIRECTION,
         .uart_address = THETA1_ADDRESS,
         .motion_limits = {
             .min = THETA1_MOTION_MIN,
-            .max = THETA1_MOTION_MAX
-        },
-        .gear_ratio = THETA1_GEAR_RATIO
-    };
-    settings[2] = ActuatorSettings {
+            .max = THETA1_MOTION_MAX},
+        .gear_ratio = THETA1_GEAR_RATIO};
+    settings[2] = ActuatorSettings{
         .step = THETA2_STEP,
         .direction = THETA2_DIRECTION,
         .uart_address = THETA2_ADDRESS,
         .motion_limits = {
             .min = THETA2_MOTION_MIN,
-            .max = THETA2_MOTION_MAX
-        },
-        .gear_ratio = THETA2_GEAR_RATIO
-    };
+            .max = THETA2_MOTION_MAX},
+        .gear_ratio = THETA2_GEAR_RATIO};
 
     for (uint8_t i = 0; i < ACTUATORS; i++)
     {
@@ -101,35 +95,36 @@ static void RunSteppers(void *arg)
     }
 }
 
+static Eigen::Vector3f Decision(Vector3f position, const std::pair<Eigen::Vector3f, Eigen::Vector3f> &solutions)
+{
+    Vector3f solution1, solution2;
+    float distance1, distance2;
+    solution1 = solutions.first;
+    solution2 = solutions.second;
+    distance1 = sqrt((solution1 - position).norm());
+    distance2 = sqrt((solution2 - position).norm());
+    return (distance1 < distance2) ? solution1 : solution2;
+}
+
 static void ControlLoop(void *arg)
 {
-    Vector3f gravity_torque;
-    Coordinates actual_position;
-    Vector6f position_error, velocity_error, state_error;
-    MatrixXf jacobian_matrix;
-
+    std::pair<Eigen::Vector3f, Eigen::Vector3f> solutions;
+    Eigen::Vector3f desired_state, state_error;
+    uint64_t last_millis = 0;
+    
     while (true)
     {
+        // Update joint positions
         joint_state.head(3) = Actuator::GetPosition(actuators, ACTUATORS);
 
-        Kinematic::UpdateDenavitHartenbergTable(dh_table, joint_state.head(3));
+        // Find all possible solutions for achieving desired orientation 
+        solutions = RobotTweezers::Kinematic::InverseKinematics(desired_position);
 
-        // Direct kinematics of joint state (calculate end effector position)
-        actual_position = Kinematic::DirectKinematics(dh_table);
+        // Select desired state, using initial state
+        desired_state = Decision(joint_state.head(3), solutions);
 
-        // Calculates Jacobian matrix, must be called after DirectKinematics
-        jacobian_matrix = Kinematic::Jacobian(dh_table, actual_position);
-
-        /// @TODO do we need gravity contributions here?
-        // gravity_torque = Kinematic::GravityTorque(joint_state.head(3));
-
-        // Calculate position and velocity error
-        position_error = desired_position - actual_position;
-        // Goes unstable here
-        velocity_error = desired_velocity - (jacobian_matrix * joint_state.tail(3));
-
-        // Total state error
-        state_error = (kp * position_error) + (kv * velocity_error);
+        // State error
+        state_error = desired_state - joint_state.head(3);
 
         if (sqrt(state_error.dot(state_error)) <= STATE_ERROR)
         {
@@ -145,16 +140,10 @@ static void ControlLoop(void *arg)
             }
         }
 
-        // Add gravity contributions
-        joint_state.tail(3) = gravity_torque + (jacobian_matrix.transpose() * state_error);
+        // Update joint velocity
+        joint_state.tail(3) = kp.block<3, 3>(3, 3) * state_error;
 
-        // Resolve singularity, since theta 0 always points in -z we need to check if theta 2 does
-        if (jacobian_matrix(5, 2) <= -0.98)
-        {
-            // Set theta 0 velocity to zero
-            joint_state(3) = 0.00;
-        }
-
+        // Set new velocity
         Actuator::SetVelocity(actuators, joint_state.tail(3), ACTUATORS);
 
         vTaskDelay(TIME_IN_MS(CONTROLLER_LOOP_RATE));
@@ -246,7 +235,7 @@ void setup()
     for (auto actuator : actuators)
     {
         actuator ? logger.Log("Stepper initialized with address %d", actuator->Address())
-            : logger.Log("Stepper is NULL");
+                 : logger.Log("Stepper is NULL");
     }
 
     if (status != pdPASS)
@@ -264,7 +253,11 @@ void setup()
 
     logger.Log("Set controller inputs to initial states, spawning controller.");
 
-    desired_position.frame = XRotation(PI);
+    // desired_position.frame = XRotation(PI);
+    desired_position.frame << 
+        -0.0,-0.0, -1.0,
+        -1.0, 0.0, 0.0,
+        0.0, 1.0, -0.0;
 
     status &= xTaskCreate(RunSteppers, nullptr, configMINIMAL_SECURE_STACK_SIZE, nullptr, 1, &run_stepper_handle);
     status &= xTaskCreate(SerialInterface, nullptr, 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 2, &interface_handle);

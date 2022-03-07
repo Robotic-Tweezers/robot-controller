@@ -46,22 +46,57 @@ RobotTweezers::Coordinates RobotTweezers::Kinematic::DirectKinematics(const floa
     return end_effector;
 }
 
-Eigen::Vector3f RobotTweezers::Kinematic::InverseKinematics(const RobotTweezers::Coordinates &end_effector)
+std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKinematics(const RobotTweezers::Coordinates &end_effector)
 {
-    //Eigen::Vector3f i_unit_base = base_frame * Eigen::Vector3f(1, 0, 0);
-    Eigen::Vector3f k_unit_base = base_frame * Eigen::Vector3f(0, 0, 1);
-    //Eigen::Vector3f i_unit_end = end_effector.frame * Eigen::Vector3f(1, 0, 0);
-    Eigen::Vector3f k_unit_end = end_effector.frame * Eigen::Vector3f(0, 0, 1);
+    std::pair<Eigen::Vector3f, Eigen::Vector3f> theta;
+    std::pair<Eigen::Vector2f, Eigen::Vector2f> theta13;
+    Eigen::Vector3f i_unit_base, k_unit_base;
+    Eigen::Vector3f i_unit_end, k_unit_end;
+    Eigen::Vector3f u, v;
+    Eigen::Vector2f theta2;
+    float psi = PI / 2;
+
+    i_unit_base = base_frame.block<3, 1>(0, 0);
+    i_unit_end = end_effector.frame.block<3, 1>(0, 0);
+    k_unit_base = base_frame.block<3, 1>(0, 2);
+    k_unit_end = end_effector.frame.block<3, 1>(0, 2);
+    v = Rotation(psi, i_unit_end) * k_unit_end;
+    u = Rotation(psi, i_unit_base) * k_unit_base;
 
     // If base and end effector k-axes are in the same direction, one solution available
-    if ((RobotTweezers::Skew3(k_unit_base) * k_unit_end).isApprox(Eigen::Vector3f(0, 0, 0), 0.01))
+    if ((Skew3(k_unit_base) * k_unit_end).isApprox(Eigen::Vector3f(0, 0, 0)))
     {
-        if (std::abs(k_unit_base.dot(k_unit_end) - 1.0f) == 0.01)
+        if (!IsEqual(k_unit_base.dot(k_unit_end), 1.00F, 0.01))
         {
-            return Eigen::Vector3f();
+            theta.first(1) = PI;
         }
+
+        theta.first(2) = 0;
+        theta.first(0) = Kahan::Problem2(k_unit_base, u, v);
+        // Copying the single solution into a second row to ensure the theta
+        // matrix is always the same size.
+        theta.second = theta.first;
+        return theta;
     }
-    return Eigen::Vector3f();
+
+    // Will return two possible solutions for theta 1 and 3
+    theta13 = Kahan::Problem3(k_unit_base, k_unit_end, u, v);
+
+    for (int i = 0; i < 2; i++)
+    {
+        Eigen::Matrix3f frame2 = end_effector.frame * Rotation(theta13.second(i), Eigen::Vector3f(0, 0, 1));
+        Eigen::Matrix3f frame1 = base_frame * Rotation(theta13.first(i), Eigen::Vector3f(0, 0, 1)) * Rotation(psi, Eigen::Vector3f(1, 0, 0));
+
+        Eigen::Vector3f i_unit1 = frame1 * Eigen::Vector3f(1, 0, 0);
+        Eigen::Vector3f k_unit1 = frame1 * Eigen::Vector3f(0, 0, 1);
+        Eigen::Vector3f i_unit2 = frame2 * Eigen::Vector3f(1, 0, 0);
+
+        theta2(i) = Kahan::Problem2(k_unit1, i_unit1, i_unit2);
+    }
+    
+    theta.first = Eigen::Vector3f(theta13.first(0), theta2(0), theta13.second(0));
+    theta.second = Eigen::Vector3f(theta13.first(1), theta2(1), theta13.second(1));
+    return theta;
 }
 
 Eigen::MatrixXf RobotTweezers::Kinematic::Jacobian(const float dh_table[][3])

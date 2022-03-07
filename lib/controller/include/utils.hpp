@@ -3,6 +3,9 @@
 
 #include <ArduinoEigen.h>
 #include <types.hpp>
+#include <limits.h>
+
+#define NaN (std::numeric_limits<float>::quiet_NaN())
 
 namespace RobotTweezers
 {
@@ -28,14 +31,16 @@ namespace RobotTweezers
     auto print = [](auto &matrix) -> void {};
 #endif // DEBUG
 
+    bool IsEqual(float a, float b, float precision);
+
     class Kahan
     {
     public:
         static float Problem1(const Eigen::Vector3f &s, const Eigen::Vector3f &t);
 
-        static float Problem2(const Eigen::Vector3f &s_unit, Eigen::Vector3f &u, Eigen::Vector3f &v, bool *valid);
+        static float Problem2(const Eigen::Vector3f &s_unit, Eigen::Vector3f &u, Eigen::Vector3f &v);
 
-        static std::tuple<float, float, float, float> Problem3(
+        static std::pair<Eigen::Vector2f, Eigen::Vector2f> Problem3(
             const Eigen::Vector3f &s_unit, const Eigen::Vector3f &t_unit, Eigen::Vector3f &u, Eigen::Vector3f &v);
 
         static float Problem4(float a, float b, float c);

@@ -1,4 +1,5 @@
 #include <utils.hpp>
+#include <limits.h>
 extern "C"
 {
 #include <math.h>
@@ -58,77 +59,87 @@ Eigen::Matrix3f RobotTweezers::EulerXYZToRotation(const float x, const float y, 
     return (x_rotation * y_rotation * z_rotation).toRotationMatrix();
 }
 
-float RobotTweezers::Kahan::Problem1(const Eigen::Vector3f &s, const Eigen::Vector3f &t)
+bool RobotTweezers::IsEqual(float a, float b, float precision)
 {
-    s.normalized();
-    t.normalized();
-    return atanf((s - t).norm() / (s + t).norm()) * 2.00F;
+    return std::abs(a - b) <= precision;
 }
 
-float RobotTweezers::Kahan::Problem2(const Eigen::Vector3f &s_unit, Eigen::Vector3f &u, Eigen::Vector3f &v, bool *valid)
+float RobotTweezers::Kahan::Problem1(const Eigen::Vector3f &s, const Eigen::Vector3f &t)
 {
+    Eigen::Vector3f s_unit = s.normalized();
+    Eigen::Vector3f t_unit = t.normalized();
+    return 2.00F * atanf((s_unit - t_unit).norm() / (s_unit + t_unit).norm());
+}
+
+float RobotTweezers::Kahan::Problem2(const Eigen::Vector3f &s_unit, Eigen::Vector3f &u, Eigen::Vector3f &v)
+{
+    Eigen::Vector3f u_unit;
+    Eigen::Vector3f v_unit;
     Eigen::Vector3f q;
     Eigen::Vector3f r;
     float theta;
 
-    u.normalize();
-    v.normalize();
+    u_unit = u.normalized();
+    v_unit = v.normalized();
 
-    if (std::abs(s_unit.dot(u) - s_unit.dot(v)) <= precision)
+    if (std::abs(s_unit.dot(u_unit) - s_unit.dot(v_unit)) > precision)
     {
-        *valid = false;
-        return 0.00F;
+        // Solution not possible;
+        return NaN;
     }
 
-    q = Skew3(s_unit) * (u - v);
-    r = Skew3(s_unit) * (u + v);
+    q = Skew3(s_unit) * (u_unit - v_unit);
+    r = Skew3(s_unit) * (u_unit + v_unit);
     theta = 2 * atan(q.norm() / r.norm());
-
-    return v.dot(Skew3(s_unit) * (u - v)) < 0 ? theta : -theta;
+    return v_unit.dot(q) < 0 ? -theta : theta;
 }
 
-std::tuple<float, float, float, float> RobotTweezers::Kahan::Problem3(
+std::pair<Eigen::Vector2f, Eigen::Vector2f> RobotTweezers::Kahan::Problem3(
     const Eigen::Vector3f &s_unit, const Eigen::Vector3f &t_unit, Eigen::Vector3f &u, Eigen::Vector3f &v)
 {
-    u.normalized();
-    v.normalized();
-    Eigen::Vector3f st_cross = Skew3(s_unit) * t_unit;
-    float st_dot = s_unit.dot(t_unit);
-    float us_dot = u.dot(s_unit);
-    float vt_dot = v.dot(t_unit);
-    bool valid;
+    Eigen::Vector3f u_unit, v_unit;
+    Eigen::Vector3f w_unit1, w_unit2;
+    Eigen::Vector3f st_cross;
+    Eigen::Vector3f z;
+    float st_dot, us_dot, vt_dot;
+    float alpha, beta;
+    float z_adj;
 
-    if (s_unit.isApprox(t_unit, precision) && u.isApprox(v, precision))
+    u_unit = u.normalized();
+    v_unit = v.normalized();
+    st_cross = Skew3(s_unit) * t_unit;
+    st_dot = s_unit.dot(t_unit);
+    us_dot = u_unit.dot(s_unit);
+    vt_dot = v_unit.dot(t_unit);
+
+    if (s_unit.isApprox(t_unit, precision) && u_unit.isApprox(v_unit, precision))
     {
-        return std::tuple<float, float, float, float>(0, 0, 0, 0);
+        return std::pair<Eigen::Vector2f, Eigen::Vector2f>(Eigen::Vector2f(0, 0), Eigen::Vector2f(0, 0));
     }
 
-    float alpha = (us_dot - st_dot * vt_dot) / st_cross.dot(st_cross);
-    float beta = (vt_dot - st_dot * us_dot) / st_cross.dot(st_cross);
+    alpha = (us_dot - st_dot * vt_dot) / st_cross.dot(st_cross);
+    beta = (vt_dot - st_dot * us_dot) / st_cross.dot(st_cross);
 
-    Eigen::Vector3f z = alpha * s_unit + beta * t_unit;
+    z = alpha * s_unit + beta * t_unit;
+    z_adj = 1 - pow(z.norm(), 2);
 
-    if (1 - pow(z.norm(), 2) < 0)
+    if (z_adj < 0)
     {
-        return std::tuple<float, float, float, float>(0, 0, 0, 0);
+        return std::pair<Eigen::Vector2f, Eigen::Vector2f>(Eigen::Vector2f(NaN, NaN), Eigen::Vector2f(NaN, NaN));
     }
 
-    Eigen::Vector3f w_unit1 = z + (sqrt(1 - pow(z.norm(), 2)) * st_cross / st_cross.norm());
-    Eigen::Vector3f w_unit2 = z - (sqrt(1 - pow(z.norm(), 2)) * st_cross / st_cross.norm());
+    w_unit1 = z + (sqrt(z_adj) * st_cross / st_cross.norm());
+    w_unit2 = z - (sqrt(z_adj) * st_cross / st_cross.norm());
 
-    return std::tuple<float, float, float, float>(
-        Kahan::Problem2(s_unit, u, w_unit1, &valid), Kahan::Problem2(s_unit, u, w_unit2, &valid),
-        Kahan::Problem2(t_unit, v, w_unit1, &valid), Kahan::Problem2(t_unit, v, w_unit2, &valid));
+    return std::pair<Eigen::Vector2f, Eigen::Vector2f>(
+        Eigen::Vector2f(Kahan::Problem2(s_unit, u_unit, w_unit1), Kahan::Problem2(s_unit, u_unit, w_unit2)),
+        Eigen::Vector2f(Kahan::Problem2(t_unit, v_unit, w_unit1), Kahan::Problem2(t_unit, v_unit, w_unit2)));
 }
 
 float RobotTweezers::Kahan::Problem4(float a, float b, float c)
 {
-    if (a + b >= c && c >= std::abs(a - b))
-    {
-        return 2 * atan(sqrt(pow(a + b, 2) - pow(c, 2)) / sqrt(pow(c, 2) - pow(a - b, 2)));
-    }
-    else
-    {
-        return -1;
-    }
+    float a_plus_b = a + b;
+    float a_minus_b = a - b;
+    return (a_plus_b >= c && c >= std::abs(a_minus_b)) 
+        ? 2.00F * atan(sqrt(pow(a_plus_b, 2) - pow(c, 2)) / sqrt(pow(c, 2) - pow(a_minus_b, 2))) : NaN;
 }
