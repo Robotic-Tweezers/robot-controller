@@ -39,6 +39,9 @@ namespace RobotTweezers
         /** @brief Current microstep resolution, stored locally to avoid repeated UART transfers */ 
         uint16_t microstep;
 
+        /** @brief */
+        uint16_t stall_threshold;
+
         /** @brief Enable pin controls all drivers simultaneously */
         static uint8_t enable;
 
@@ -133,6 +136,14 @@ namespace RobotTweezers
          * @param gear_ratio Actuator gear ratio
          */
         void SetGearRatio(float gear_ratio);
+
+        /**
+         * @brief 
+         * 
+         * @return true 
+         * @return false 
+         */
+        bool Home(float home_position);
 
         /**
          * @brief Creates a new Actuator object, and checks for normal comms

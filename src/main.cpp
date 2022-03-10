@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
 #include <FreeRTOS_TEENSY4.h>
+#include <ArduinoJson.h>
 #include <config.hpp>
 #include <kinematic.hpp>
 #include <coordinates.hpp>
@@ -21,28 +21,21 @@ TaskHandle_t controller_handle;
 TaskHandle_t interface_handle;
 
 // Constant gain matricies
-const Matrix6f kp = VectorToDiagnol6((float[]){
-    POSITION_GAIN_X,
-    POSITION_GAIN_Y,
-    POSITION_GAIN_Z,
+const Matrix3f kp = ToDiagnol3(
     POSITION_GAIN_R,
     POSITION_GAIN_P,
-    POSITION_GAIN_W});
-const Matrix6f kv = VectorToDiagnol6((float[]){
-    VELOCITY_GAIN_X,
-    VELOCITY_GAIN_Y,
-    VELOCITY_GAIN_Z,
+    POSITION_GAIN_W);
+const Matrix3f kv = ToDiagnol3(
     VELOCITY_GAIN_R,
     VELOCITY_GAIN_P,
-    VELOCITY_GAIN_W});
+    VELOCITY_GAIN_W);
 
 // Controller variables
 Actuator *actuators[ACTUATORS];
 queue<Coordinates> position_queue;
-Coordinates desired_position;
-Vector3f desired_velocity;
 Vector6f joint_state;
-/** @brief The DH transformation parameters for the wrist manipulator (a is omitted) */
+
+/** @brief The DH transformation parameters for the wrist manipulator (translational x-axis component is omitted) */
 float dh_table[3][3] = {
     {0, LENGTH1, PI / 2},
     {0, 0, -PI / 2},
@@ -54,29 +47,32 @@ static bool InitializeActuators(HardwareSerial *serial)
     bool status = true;
     ActuatorSettings settings[ACTUATORS];
     settings[0] = ActuatorSettings{
-        .step = THETA0_STEP,
-        .direction = THETA0_DIRECTION,
-        .uart_address = THETA0_ADDRESS,
         .motion_limits = {
             .min = THETA0_MOTION_MIN,
             .max = THETA0_MOTION_MAX},
-        .gear_ratio = THETA0_GEAR_RATIO};
+        .gear_ratio = THETA0_GEAR_RATIO,
+        .stall_threshold = THETA0_STALL,
+        .step = THETA0_STEP,
+        .direction = THETA0_DIRECTION,
+        .uart_address = THETA0_ADDRESS};
     settings[1] = ActuatorSettings{
-        .step = THETA1_STEP,
-        .direction = THETA1_DIRECTION,
-        .uart_address = THETA1_ADDRESS,
         .motion_limits = {
             .min = THETA1_MOTION_MIN,
             .max = THETA1_MOTION_MAX},
-        .gear_ratio = THETA1_GEAR_RATIO};
+        .gear_ratio = THETA1_GEAR_RATIO,
+        .stall_threshold = THETA1_STALL,
+        .step = THETA1_STEP,
+        .direction = THETA1_DIRECTION,
+        .uart_address = THETA1_ADDRESS};
     settings[2] = ActuatorSettings{
-        .step = THETA2_STEP,
-        .direction = THETA2_DIRECTION,
-        .uart_address = THETA2_ADDRESS,
         .motion_limits = {
             .min = THETA2_MOTION_MIN,
             .max = THETA2_MOTION_MAX},
-        .gear_ratio = THETA2_GEAR_RATIO};
+        .gear_ratio = THETA2_GEAR_RATIO,
+        .stall_threshold = THETA2_STALL,
+        .step = THETA2_STEP,
+        .direction = THETA2_DIRECTION,
+        .uart_address = THETA2_ADDRESS};
 
     for (uint8_t i = 0; i < ACTUATORS; i++)
     {
@@ -84,15 +80,6 @@ static bool InitializeActuators(HardwareSerial *serial)
     }
 
     return status;
-}
-
-static void RunSteppers(void *arg)
-{
-    while (true)
-    {
-        Actuator::Run(actuators, ACTUATORS);
-        vTaskDelay(TIME_IN_US(PWM_LOOP_RATE));
-    }
 }
 
 static Eigen::Vector3f Decision(Vector3f position, const std::pair<Eigen::Vector3f, Eigen::Vector3f> &solutions)
@@ -106,26 +93,35 @@ static Eigen::Vector3f Decision(Vector3f position, const std::pair<Eigen::Vector
     return (distance1 < distance2) ? solution1 : solution2;
 }
 
+static void RunSteppers(void *arg)
+{
+    while (true)
+    {
+        Actuator::Run(actuators, ACTUATORS);
+        vTaskDelay(TIME_IN_US(PWM_LOOP_RATE));
+    }
+}
+
 static void ControlLoop(void *arg)
 {
-    std::pair<Eigen::Vector3f, Eigen::Vector3f> solutions;
-    Eigen::Vector3f desired_state, state_error;
-    uint64_t last_millis = 0;
+    std::pair<Vector3f, Vector3f> solutions;
+    Vector6f desired_state;
+    Vector6f state_error;
+    Vector6f previous_state;
+    const Matrix3f interval = ToDiagnol3(
+        TIME_IN_MS(1000 * CONTROLLER_LOOP_RATE), 
+        TIME_IN_MS(1000 * CONTROLLER_LOOP_RATE), 
+        TIME_IN_MS(1000 * CONTROLLER_LOOP_RATE));
     
     while (true)
     {
         // Update joint positions
         joint_state.head(3) = Actuator::GetPosition(actuators, ACTUATORS);
 
-        // Find all possible solutions for achieving desired orientation 
-        solutions = RobotTweezers::Kinematic::InverseKinematics(desired_position);
-
-        // Select desired state, using initial state
-        desired_state = Decision(joint_state.head(3), solutions);
-
         // State error
-        state_error = desired_state - joint_state.head(3);
+        state_error = desired_state - joint_state;
 
+        // State error is at required minimum
         if (sqrt(state_error.dot(state_error)) <= STATE_ERROR)
         {
             if (position_queue.empty())
@@ -135,13 +131,20 @@ static void ControlLoop(void *arg)
             }
             else
             {
-                desired_position = position_queue.front();
+                // Find all possible solutions for achieving desired orientation 
+                solutions = RobotTweezers::Kinematic::InverseKinematics(position_queue.front());
                 position_queue.pop();
+                previous_state = desired_state;
+                // Select desired state, using initial state
+                desired_state << 
+                    Decision(joint_state.head(3), solutions),
+                    interval * (desired_state - previous_state).head(3); 
+                
             }
         }
 
         // Update joint velocity
-        joint_state.tail(3) = kp.block<3, 3>(3, 3) * state_error;
+        joint_state.tail(3) = (kp * state_error.head(3)) + (kv * state_error.tail(3));
 
         // Set new velocity
         Actuator::SetVelocity(actuators, joint_state.tail(3), ACTUATORS);
@@ -247,17 +250,19 @@ void setup()
     logger.Log("Actuator motors initialized successfully.");
     Actuator::Enable();
 
+    // status &= actuators[0]->Home(HALF_PI);
+    // status &= actuators[1]->Home(HALF_PI);
+    // status &= actuators[2]->Home(HALF_PI);
+
+    logger.Log("Home %s", status ? "PASSED" : "FAILED");
+
     // Turn on LED to indicate correct operation
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
 
     logger.Log("Set controller inputs to initial states, spawning controller.");
 
-    // desired_position.frame = XRotation(PI);
-    desired_position.frame << 
-        -0.0,-0.0, -1.0,
-        -1.0, 0.0, 0.0,
-        0.0, 1.0, -0.0;
+    position_queue.push(Coordinates(XRotation(PI), Vector3f(0, 0, 0)));
 
     status &= xTaskCreate(RunSteppers, nullptr, configMINIMAL_SECURE_STACK_SIZE, nullptr, 1, &run_stepper_handle);
     status &= xTaskCreate(SerialInterface, nullptr, 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 2, &interface_handle);
@@ -268,7 +273,6 @@ void setup()
         Actuator::Delete(actuators, ACTUATORS);
         logger.Error("Creation problem");
     }
-
     vTaskStartScheduler();
 
     Actuator::Delete(actuators, ACTUATORS);

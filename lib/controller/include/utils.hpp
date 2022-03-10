@@ -62,6 +62,13 @@ namespace RobotTweezers
      */
     Eigen::Matrix3f XRotation(float alpha);
 
+    /**
+     * @brief 
+     * 
+     * @param angle 
+     * @param axis 
+     * @return Eigen::Matrix3f 
+     */
     Eigen::Matrix3f Rotation(float angle, Eigen::Vector3f axis);
 
     /**
@@ -73,12 +80,20 @@ namespace RobotTweezers
     Eigen::Matrix3f ZRotation(float theta);
 
     /**
+     * @brief 
+     * 
+     * @param vector 
+     * @return Eigen::Matrix3f 
+     */
+    Eigen::Matrix3f ToDiagnol3(const float x, const float y, const float z);
+    
+    /**
      * @brief Calculates a diagnol matrix from a vector
      *
      * @param vector Input vector
      * @return Eigen::Matrix6f
      */
-    Eigen::Matrix6f VectorToDiagnol6(const float vector[]);
+    Eigen::Matrix6f ToDiagnol6(const float x, const float y, const float z, const float r, const float p, const float w);
 
     /**
      * @brief Calculates the rotation matrix specified by XYZ Euler Angles

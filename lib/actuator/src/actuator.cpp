@@ -11,6 +11,7 @@ RobotTweezers::Actuator::Actuator() : driver(), uart(nullptr, RSENSE, 0b00) {}
 RobotTweezers::Actuator::Actuator(HardwareSerial *serial, ActuatorSettings &settings)
     : driver(AccelStepper::DRIVER, settings.step, settings.direction), uart(serial, RSENSE, settings.uart_address)
 {
+    stall_threshold = settings.stall_threshold;
     SetMotionLimits(settings.motion_limits.min, settings.motion_limits.max);
     SetGearRatio(settings.gear_ratio);
     Initialize();
@@ -34,32 +35,19 @@ long RobotTweezers::Actuator::RadiansToSteps(float radians, float gear_ratio, ui
 
 bool RobotTweezers::Actuator::Initialize(void)
 {
-    // uint32_t gconf_data = 0x00C0;
+    // Initialize UART
+    uart.begin();
+    uart.GCONF(0x1C0);
+    uart.SGTHRS(stall_threshold);
+    uart.senddelay(0);
+    SetMicrostepResolution(8);
 
-    SetMicrostepResolution(64);
-
+    // Initialize stepper control
     driver.setCurrentPosition(0);
     driver.setMaxSpeed(RadiansToSteps(15, gear_ratio, microstep));
-    // driver.setAcceleration(1000);
 
+    // Set initial velocity
     SetVelocity(0.00);
-    
-    uart.begin();
-    uart.SLAVECONF(0x0000);
-    // uart.VACTUAL(5000);
-    // uart.GCONF(gconf_data);
-    // uart.SLAVECONF(0x0000);
-    // uart.toff(4);
-    ///// @TODO Figure out what these do
-    // uart.blank_time(24);
-    // uart.rms_current(400);
-    //// Set microstep resolution
-    ///// @TODO Figure out what these do
-    // uart.TCOOLTHRS(0xFFFFF);
-    // uart.semin(5);
-    // uart.semax(2);
-    // uart.sedn(0b01);
-    // uart.SGTHRS(50);
     return true;
 }
 
@@ -73,11 +61,6 @@ void RobotTweezers::Actuator::SetVelocity(float velocity)
 {
     long velocity_steps = RadiansToSteps(velocity, gear_ratio, microstep);
     driver.setSpeed(velocity_steps);
-    // Undefined behaviour when writing zero frequency
-    //if (std::abs(velocity) > MINIMUM_VELOCITY)
-    //{
-    //    driver.runSpeed();
-    //}
 }
 
 float RobotTweezers::Actuator::GetPosition(void)
@@ -97,9 +80,29 @@ void RobotTweezers::Actuator::SetGearRatio(float gear_ratio)
     this->gear_ratio = gear_ratio;
 }
 
+bool RobotTweezers::Actuator::Home(float home_position)
+{
+    SetVelocity(1);
+    do
+    {
+        driver.runSpeed();
+        delayMicroseconds(100);
+    }
+    while ((uart.SG_RESULT() > stall_threshold) && (GetPosition() <= TWO_PI));
+
+    if (GetPosition() <= TWO_PI)
+    {
+        driver.setCurrentPosition(RadiansToSteps(home_position, gear_ratio, microstep));
+        return true;
+    }
+
+    return false;
+}
+
 RobotTweezers::Actuator *RobotTweezers::Actuator::ActuatorFactory(HardwareSerial *serial, ActuatorSettings &settings)
 {
     TMC2209Stepper connection(serial, RSENSE, settings.uart_address);
+    connection.begin();
     // If we cannot connect over UART, something is wrong
     return connection.test_connection() == 0 ? new Actuator(serial, settings) : nullptr;
 }
@@ -146,7 +149,6 @@ Eigen::Vector3f RobotTweezers::Actuator::GetPosition(RobotTweezers::Actuator *ac
 
     return position;
 }
-
 
 void RobotTweezers::Actuator::Run(Actuator *actuators[], uint8_t size)
 {

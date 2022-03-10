@@ -39,15 +39,24 @@ Eigen::Matrix3f RobotTweezers::Rotation(float angle, Eigen::Vector3f axis)
     return Eigen::AngleAxisf(angle, axis).toRotationMatrix();
 }
 
-Eigen::Matrix6f RobotTweezers::VectorToDiagnol6(const float vector[])
+Eigen::Matrix3f RobotTweezers::ToDiagnol3(const float x, const float y, const float z)
+{
+    Eigen::Matrix3f diagnol;
+    diagnol << x, 0, 0,
+        0, y, 0,
+        0, 0, z;
+    return diagnol;
+}
+
+Eigen::Matrix6f RobotTweezers::ToDiagnol6(const float x, const float y, const float z, const float r, const float p, const float w)
 {
     Eigen::Matrix6f diagnol;
-    diagnol << vector[0], 0, 0, 0, 0, 0,
-        0, vector[1], 0, 0, 0, 0,
-        0, 0, vector[2], 0, 0, 0,
-        0, 0, 0, vector[3], 0, 0,
-        0, 0, 0, 0, vector[4], 0,
-        0, 0, 0, 0, 0, vector[5];
+    diagnol << x, 0, 0, 0, 0, 0,
+        0, y, 0, 0, 0, 0,
+        0, 0, z, 0, 0, 0,
+        0, 0, 0, r, 0, 0,
+        0, 0, 0, 0, p, 0,
+        0, 0, 0, 0, 0, w;
     return diagnol;
 }
 
