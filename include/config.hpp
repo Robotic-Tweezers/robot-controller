@@ -20,19 +20,25 @@
  * @brief Controller configurations
  *
  */
-#define POSITION_GAIN_X 0.00 // Gain for position in x
-#define POSITION_GAIN_Y 0.00 // Gain for position in y
-#define POSITION_GAIN_Z 0.00 // Gain for position in z
-#define POSITION_GAIN_R 1.00 // Gain for roll angle
-#define POSITION_GAIN_P 1.00 // Gain for pitch angle
-#define POSITION_GAIN_W 1.00 // Gain for yaw angle
+// Translational control not used
+#if 0
+#define POSITION_GAIN_X 0.00f // Gain for position in x
+#define POSITION_GAIN_Y 0.00f // Gain for position in y
+#define POSITION_GAIN_Z 0.00f // Gain for position in z
+#endif 
+#define POSITION_GAIN_R 2.00f // Gain for roll angle
+#define POSITION_GAIN_P 2.00f // Gain for pitch angle
+#define POSITION_GAIN_W 2.00f // Gain for yaw angle
 
-#define VELOCITY_GAIN_X 0.00 // Gain for velocity in x
-#define VELOCITY_GAIN_Y 0.00 // Gain for velocity in y
-#define VELOCITY_GAIN_Z 0.00 // Gain for velocity in z
-#define VELOCITY_GAIN_R 0.00 // Gain for roll angular velocity
-#define VELOCITY_GAIN_P 0.00 // Gain for pitch angular velocity
-#define VELOCITY_GAIN_W 0.00 // Gain for yaw angular velocity
+// Translational control not used
+#if 0
+#define VELOCITY_GAIN_X 0.00f // Gain for velocity in x
+#define VELOCITY_GAIN_Y 0.00f // Gain for velocity in y
+#define VELOCITY_GAIN_Z 0.00f // Gain for velocity in z
+#endif 
+#define VELOCITY_GAIN_R 0.40f // Gain for roll angular velocity
+#define VELOCITY_GAIN_P 0.40f // Gain for pitch angular velocity
+#define VELOCITY_GAIN_W 0.40f // Gain for yaw angular velocity
 
 #define STATE_ERROR 0.01 // Defines the max position error
 
@@ -43,6 +49,10 @@
 #define ACTUATORS 3
 #define ACTUATOR_BAUDRATE 460800
 #define ENABLE_PIN 12 // Enable pin
+
+#define THETA0_STALL 8 // TMC2209 Driver 0 stall value for homing
+#define THETA1_STALL 8 // TMC2209 Driver 1 stall value for homing
+#define THETA2_STALL 8 // TMC2209 Driver 2 stall value for homing
 
 #define THETA0_ADDRESS 0b00 // TMC2209 Driver address according to MS1 and MS2
 #define THETA1_ADDRESS 0b01 // TMC2209 Driver address according to MS1 and MS2

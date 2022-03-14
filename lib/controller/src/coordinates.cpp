@@ -2,7 +2,7 @@
 
 RobotTweezers::Coordinates::Coordinates(void) { }
 
-RobotTweezers::Coordinates::Coordinates(const Eigen::Matrix3f& frame, Eigen::Vector3f& origin)
+RobotTweezers::Coordinates::Coordinates(const Eigen::Matrix3f frame, Eigen::Vector3f origin)
 : frame(frame), origin(origin) { }
 
 RobotTweezers::Coordinates::Coordinates(const Eigen::Matrix4f& coordinates)
@@ -47,4 +47,16 @@ Eigen::Vector6f RobotTweezers::Coordinates::operator-(const Coordinates& op)
         origin - op.origin,
         rotation_error;
     return error;
+}
+
+RobotTweezers::Coordinates RobotTweezers::Coordinates::operator*(const Coordinates& op)
+{
+    return RobotTweezers::Coordinates(frame * op.frame, (frame * op.origin) + origin);
+}
+
+RobotTweezers::Coordinates& RobotTweezers::Coordinates::operator*=(const Coordinates& op)
+{
+    origin = (frame * op.origin) + origin;
+    frame *= op.frame;
+    return *this;
 }
