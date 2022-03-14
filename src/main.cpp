@@ -6,7 +6,7 @@
 #include <coordinates.hpp>
 #include <actuator.hpp>
 #include <logger.hpp>
-#include <queue>
+#include <CircularBuffer.h>
 
 #define TIME_IN_MS(TIME) (TIME) * configTICK_RATE_HZ / 1000UL
 #define TIME_IN_US(TIME) (TIME) * configTICK_RATE_HZ / 1000000UL
@@ -21,21 +21,15 @@ TaskHandle_t controller_handle;
 TaskHandle_t interface_handle;
 
 // Constant gain matricies
-const Matrix3f kp = ToDiagnol3(
-    POSITION_GAIN_R,
-    POSITION_GAIN_P,
-    POSITION_GAIN_W);
-const Matrix3f kv = ToDiagnol3(
-    VELOCITY_GAIN_R,
-    VELOCITY_GAIN_P,
-    VELOCITY_GAIN_W);
+const Matrix3f kp = ToDiagnol3(POSITION_GAIN_R, POSITION_GAIN_P, POSITION_GAIN_W);
+const Matrix3f kv = ToDiagnol3(VELOCITY_GAIN_R, VELOCITY_GAIN_P, VELOCITY_GAIN_W);
 
 // Controller variables
 Actuator *actuators[ACTUATORS];
-queue<Coordinates> position_queue;
+CircularBuffer<Coordinates, 1024> position_queue;
 Vector6f joint_state;
 
-/** @brief The DH transformation parameters for the wrist manipulator (translational x-axis component is omitted) */
+/// @brief The DH transformation parameters for the wrist manipulator (translational x-axis component is omitted)
 float dh_table[3][3] = {
     {0, LENGTH1, PI / 2},
     {0, 0, -PI / 2},
@@ -104,14 +98,8 @@ static void RunSteppers(void *arg)
 
 static void ControlLoop(void *arg)
 {
-    std::pair<Vector3f, Vector3f> solutions;
-    Vector6f desired_state;
-    Vector6f state_error;
-    Vector6f previous_state;
-    const Matrix3f interval = ToDiagnol3(
-        TIME_IN_MS(1000 * CONTROLLER_LOOP_RATE), 
-        TIME_IN_MS(1000 * CONTROLLER_LOOP_RATE), 
-        TIME_IN_MS(1000 * CONTROLLER_LOOP_RATE));
+    pair<Vector3f, Vector3f> solutions;
+    Vector6f desired_state, previous_state, state_error;
     
     while (true)
     {
@@ -124,22 +112,22 @@ static void ControlLoop(void *arg)
         // State error is at required minimum
         if (sqrt(state_error.dot(state_error)) <= STATE_ERROR)
         {
-            if (position_queue.empty())
+            if (position_queue.isEmpty())
             {
                 Actuator::SetVelocity(actuators, Vector3f(0, 0, 0), ACTUATORS);
                 vTaskSuspend(controller_handle);
             }
             else
             {
-                // Find all possible solutions for achieving desired orientation 
-                solutions = RobotTweezers::Kinematic::InverseKinematics(position_queue.front());
+                // Find all possible solutions for achieving desired orientation
+                solutions = Kinematic::InverseKinematics(position_queue.first());
                 position_queue.pop();
                 previous_state = desired_state;
                 // Select desired state, using initial state
                 desired_state << 
                     Decision(joint_state.head(3), solutions),
-                    interval * (desired_state - previous_state).head(3); 
-                
+                    /// @todo verify that this should be caluclated here instead of at client 
+                    (1 / TIME_IN_MS(1000 * CONTROLLER_LOOP_RATE)) * (desired_state - previous_state).head(3);
             }
         }
 
@@ -203,7 +191,7 @@ static void SerialInterface(void *arg)
                 float pitch_angle = gui_command["position"]["pitch"];
                 float yaw_angle = gui_command["position"]["yaw"];
                 new_coords.frame = EulerXYZToRotation(roll_anlge, pitch_angle, yaw_angle);
-                if (position_queue.empty())
+                if (position_queue.isEmpty())
                 {
                     // Resume controller
                     vTaskResume(controller_handle);
@@ -235,6 +223,9 @@ void setup()
     actuator_serial->begin(ACTUATOR_BAUDRATE);
     status &= InitializeActuators(actuator_serial);
 
+    Kinematic::SetDegreesOfFreedom(ACTUATORS);
+    Kinematic::SetBaseFrame(XRotation(PI));
+
     for (auto actuator : actuators)
     {
         actuator ? logger.Log("Stepper initialized with address %d", actuator->Address())
@@ -250,9 +241,11 @@ void setup()
     logger.Log("Actuator motors initialized successfully.");
     Actuator::Enable();
 
-    // status &= actuators[0]->Home(HALF_PI);
-    // status &= actuators[1]->Home(HALF_PI);
-    // status &= actuators[2]->Home(HALF_PI);
+#if 0 // Need to add sensorless homeing to robot 
+    status &= actuators[0]->Home(HALF_PI);
+    status &= actuators[1]->Home(HALF_PI);
+    status &= actuators[2]->Home(HALF_PI);
+#endif
 
     logger.Log("Home %s", status ? "PASSED" : "FAILED");
 
@@ -261,8 +254,6 @@ void setup()
     digitalWrite(LED_BUILTIN, HIGH);
 
     logger.Log("Set controller inputs to initial states, spawning controller.");
-
-    position_queue.push(Coordinates(XRotation(PI), Vector3f(0, 0, 0)));
 
     status &= xTaskCreate(RunSteppers, nullptr, configMINIMAL_SECURE_STACK_SIZE, nullptr, 1, &run_stepper_handle);
     status &= xTaskCreate(SerialInterface, nullptr, 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 2, &interface_handle);
@@ -273,6 +264,7 @@ void setup()
         Actuator::Delete(actuators, ACTUATORS);
         logger.Error("Creation problem");
     }
+    
     vTaskStartScheduler();
 
     Actuator::Delete(actuators, ACTUATORS);

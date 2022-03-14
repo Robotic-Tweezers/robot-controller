@@ -48,7 +48,7 @@ RobotTweezers::Coordinates RobotTweezers::Kinematic::DirectKinematics(const floa
 
 std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKinematics(const RobotTweezers::Coordinates &end_effector)
 {
-    std::pair<Eigen::Vector3f, Eigen::Vector3f> theta;
+    std::pair<Eigen::Vector3f, Eigen::Vector3f> theta({Eigen::Vector3f(0, 0, 0), Eigen::Vector3f(0, 0, 0)});
     std::pair<Eigen::Vector2f, Eigen::Vector2f> theta13;
     Eigen::Vector3f i_unit_base, k_unit_base;
     Eigen::Vector3f i_unit_end, k_unit_end;
@@ -66,7 +66,7 @@ std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKin
     // If base and end effector k-axes are in the same direction, one solution available
     if ((Skew3(k_unit_base) * k_unit_end).isApprox(Eigen::Vector3f(0, 0, 0)))
     {
-        if (!IsEqual(k_unit_base.dot(k_unit_end), 1.00F, 0.01))
+        if (IsEqual(k_unit_base.dot(k_unit_end), 1.00F, 0.01) == false)
         {
             theta.first(1) = PI;
         }

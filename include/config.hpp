@@ -20,19 +20,25 @@
  * @brief Controller configurations
  *
  */
+// Translational control not used
+#if 0
 #define POSITION_GAIN_X 0.00f // Gain for position in x
 #define POSITION_GAIN_Y 0.00f // Gain for position in y
 #define POSITION_GAIN_Z 0.00f // Gain for position in z
-#define POSITION_GAIN_R 1.00f // Gain for roll angle
-#define POSITION_GAIN_P 1.00f // Gain for pitch angle
-#define POSITION_GAIN_W 1.00f // Gain for yaw angle
+#endif 
+#define POSITION_GAIN_R 2.00f // Gain for roll angle
+#define POSITION_GAIN_P 2.00f // Gain for pitch angle
+#define POSITION_GAIN_W 2.00f // Gain for yaw angle
 
+// Translational control not used
+#if 0
 #define VELOCITY_GAIN_X 0.00f // Gain for velocity in x
 #define VELOCITY_GAIN_Y 0.00f // Gain for velocity in y
 #define VELOCITY_GAIN_Z 0.00f // Gain for velocity in z
-#define VELOCITY_GAIN_R 0.00f // Gain for roll angular velocity
-#define VELOCITY_GAIN_P 0.00f // Gain for pitch angular velocity
-#define VELOCITY_GAIN_W 0.00f // Gain for yaw angular velocity
+#endif 
+#define VELOCITY_GAIN_R 0.40f // Gain for roll angular velocity
+#define VELOCITY_GAIN_P 0.40f // Gain for pitch angular velocity
+#define VELOCITY_GAIN_W 0.40f // Gain for yaw angular velocity
 
 #define STATE_ERROR 0.01 // Defines the max position error
 
