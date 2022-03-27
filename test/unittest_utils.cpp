@@ -105,9 +105,9 @@ void unittest_Kahan_problem3(void)
     Vector3f u = Vector3f(-1, -1, 1);
     Vector3f v = Vector3f(-1, 0, 0);
 
-    std::tuple<float, float, float, float> result = Kahan::Problem3(s_unit, t_unit, u, v);
-    TEST_ASSERT_EQUAL(std::isnan(std::get<0>(result)), true);
-    TEST_ASSERT_EQUAL(std::isnan(std::get<2>(result)), true);
+    std::pair<Vector2f, Vector2f> result = Kahan::Problem3(s_unit, t_unit, u, v);
+    TEST_ASSERT_EQUAL(std::isnan(result.first(0)), true);
+    TEST_ASSERT_EQUAL(std::isnan(result.second(0)), true);
 
     s_unit = Vector3f(1, 0, 0);
     t_unit = Vector3f(0, 0, 1);
@@ -115,10 +115,10 @@ void unittest_Kahan_problem3(void)
     v = Vector3f(-1, 0, 1);
 
     result = Kahan::Problem3(s_unit, t_unit, u, v);
-    TEST_ASSERT_EQUAL(std::get<0>(result), -PI);
-    TEST_ASSERT_EQUAL(std::get<1>(result), PI);
-    TEST_ASSERT_EQUAL(std::get<2>(result), PI);
-    TEST_ASSERT_EQUAL(std::get<3>(result), -PI);
+    TEST_ASSERT_EQUAL(result.first(0), -PI);
+    TEST_ASSERT_EQUAL(result.first(1), PI);
+    TEST_ASSERT_EQUAL(result.second(0), PI);
+    TEST_ASSERT_EQUAL(result.second(1), -PI);
 
     s_unit = Vector3f(1, 0, 0);
     t_unit = Vector3f(0, 1, 0);
@@ -126,10 +126,10 @@ void unittest_Kahan_problem3(void)
     v = Vector3f(-1, 0, 1);
 
     result = Kahan::Problem3(s_unit, t_unit, u, v);
-    TEST_ASSERT_EQUAL(std::get<0>(result), PI);
-    TEST_ASSERT_EQUAL(std::get<1>(result), 0.00);
-    TEST_ASSERT_EQUAL(std::get<2>(result), HALF_PI);
-    TEST_ASSERT_EQUAL(std::get<3>(result), PI);
+    TEST_ASSERT_EQUAL(result.first(0), PI);
+    TEST_ASSERT_EQUAL(result.first(1), 0.00);
+    TEST_ASSERT_EQUAL(result.second(0), HALF_PI);
+    TEST_ASSERT_EQUAL(result.second(1), PI);
 
     s_unit = Vector3f(1, 0, 0);
     t_unit = Vector3f(1, 0, 0);
@@ -137,10 +137,10 @@ void unittest_Kahan_problem3(void)
     v = Vector3f(1, 0, 1);
 
     result = Kahan::Problem3(s_unit, t_unit, u, v);
-    TEST_ASSERT_EQUAL(std::get<0>(result), 0.00);
-    TEST_ASSERT_EQUAL(std::get<1>(result), 0.00);
-    TEST_ASSERT_EQUAL(std::get<2>(result), 0.00);
-    TEST_ASSERT_EQUAL(std::get<3>(result), 0.00);
+    TEST_ASSERT_EQUAL(result.first(0), 0.00);
+    TEST_ASSERT_EQUAL(result.first(1), 0.00);
+    TEST_ASSERT_EQUAL(result.second(0), 0.00);
+    TEST_ASSERT_EQUAL(result.second(1), 0.00);
 
     s_unit = Vector3f(1, 1, 1) / sqrt(3);
     t_unit = Vector3f(-1, 0, 0);
@@ -148,10 +148,10 @@ void unittest_Kahan_problem3(void)
     v = Vector3f(1, 0, 1);
 
     result = Kahan::Problem3(s_unit, t_unit, u, v);
-    TEST_ASSERT_EQUAL(std::get<0>(result), 0.00);
-    TEST_ASSERT_EQUAL(std::get<1>(result), 2.0944);
-    TEST_ASSERT_EQUAL(std::get<2>(result), 0.00);
-    TEST_ASSERT_EQUAL(std::get<3>(result), HALF_PI);
+    TEST_ASSERT_EQUAL(result.first(0), 0.00);
+    TEST_ASSERT_EQUAL(result.first(1), 2.0944);
+    TEST_ASSERT_EQUAL(result.second(0), 0.00);
+    TEST_ASSERT_EQUAL(result.second(1), HALF_PI);
 }
 
 void unittest_Kahan_problem4(void)

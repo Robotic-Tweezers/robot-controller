@@ -106,6 +106,34 @@ void unittest_DirectKinematics(void)
     TEST_ASSERT_EQUAL(end_effector.GetCoordinates().isApprox(expected, 0.01), true);
 }
 
+void unittest_InverseKinematics(void)
+{
+    float dh_table[3][3] = {
+        {0, LENGTH1, PI / 2},
+        {HALF_PI, 0, -PI / 2},
+        {0, LENGTH2, 0},
+    };
+    //std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKinematics(const float roll, const float pitch, const float yaw)
+    for (int i = 0; i < 100; i++)
+    {
+        dh_table[0][0] = (float)i * TWO_PI / 100.00;
+        Coordinates test = Kinematic::DirectKinematics(dh_table);
+        auto solutions = Kinematic::InverseKinematics(test);
+        Serial.print(solutions.first(0));
+        Serial.print(" ");
+        Serial.print(solutions.second(0));
+        Serial.print(" ");
+        Serial.print(solutions.first(1));
+        Serial.print(" ");
+        Serial.print(solutions.second(1));
+        Serial.print(" ");
+        Serial.print(solutions.first(2));
+        Serial.print(" ");
+        Serial.print(solutions.second(2));
+        Serial.print(" ");
+    }
+}
+
 void unittest_Jacobian(void)
 {
     Vector3f joint_state(0, 0, 0);

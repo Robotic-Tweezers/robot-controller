@@ -6,7 +6,6 @@
 
 using namespace RobotTweezers;
 
-/*
 // Coordinates tests
 extern void unittest_SetFrameOrigin(void);
 extern void unittest_SetCoordinates(void);
@@ -19,6 +18,7 @@ extern void Kinematic_setup(void);
 extern void unittest_DenavitHartenbergTransform(void);
 extern void unittest_UpdateDenavitHartenbergTable(void);
 extern void unittest_DirectKinematics(void);
+extern void unittest_InverseKinematics(void);
 extern void unittest_Jacobian(void);
 
 // Utilities tests
@@ -31,7 +31,7 @@ extern void unittest_Kahan_problem3(void);
 extern void unittest_Kahan_problem4(void);
 
 extern void unittest_StepperControl(void);
-*/
+
 
 void setup()
 {
@@ -40,24 +40,9 @@ void setup()
     delay(2000);
     UNITY_BEGIN();
     Serial.println("Robot Tweezers test build");
+
+    // RUN_TEST(unittest_InverseKinematics);
     
-    // Kinematic_setup();
-    // unittest_SetFrameOrigin();
-    // unittest_SetCoordinates();
-    // unittest_SubtractOperator();
-    // unittest_EqualsOperator();
-    // unittest_MultiplyOperator();
-    // unittest_DenavitHartenbergTransform();
-    // unittest_UpdateDenavitHartenbergTable();
-    // unittest_DirectKinematics();
-    // unittest_Jacobian();
-    // unittest_skew3();
-    // unittest_xRotation();
-    // unittest_zRotation();
-    unittest_Kahan_problem1();  
-    // unittest_Kahan_problem2();
-    // unittest_Kahan_problem3();
-    // unittest_Kahan_problem4();
 }
 
 void loop()
