@@ -46,6 +46,8 @@ namespace RobotTweezers
          */
         static Coordinates DirectKinematics(const float dh_table[][3]);
 
+        static std::pair<Eigen::Vector3f, Eigen::Vector3f> InverseKinematics(const float roll, const float pitch, const float yaw);
+
         static std::pair<Eigen::Vector3f, Eigen::Vector3f> InverseKinematics(const RobotTweezers::Coordinates &end_effector);
 
         /**

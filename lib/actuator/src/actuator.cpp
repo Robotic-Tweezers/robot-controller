@@ -44,7 +44,7 @@ bool RobotTweezers::Actuator::Initialize(void)
 
     // Initialize stepper control
     driver.setCurrentPosition(0);
-    driver.setMaxSpeed(RadiansToSteps(15, gear_ratio, microstep));
+    driver.setMaxSpeed(RadiansToSteps(8, gear_ratio, microstep));
 
     // Set initial velocity
     SetVelocity(0.00);

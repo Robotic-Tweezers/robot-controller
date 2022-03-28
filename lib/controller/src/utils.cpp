@@ -65,6 +65,7 @@ Eigen::Matrix3f RobotTweezers::EulerXYZToRotation(const float x, const float y, 
     Eigen::AngleAxisf x_rotation(x, Eigen::Vector3f::UnitX());
     Eigen::AngleAxisf y_rotation(y, Eigen::Vector3f::UnitY());
     Eigen::AngleAxisf z_rotation(z, Eigen::Vector3f::UnitZ());
+    
     return (x_rotation * y_rotation * z_rotation).toRotationMatrix();
 }
 

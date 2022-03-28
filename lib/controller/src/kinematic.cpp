@@ -46,6 +46,13 @@ RobotTweezers::Coordinates RobotTweezers::Kinematic::DirectKinematics(const floa
     return end_effector;
 }
 
+std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKinematics(const float roll, const float pitch, const float yaw)
+{
+    Eigen::Matrix3f frame = EulerXYZToRotation(roll, pitch, yaw);
+    RobotTweezers::Coordinates coordinates = Coordinates(frame, Eigen::Vector3f());
+    return RobotTweezers::Kinematic::InverseKinematics(coordinates);
+}
+
 std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKinematics(const RobotTweezers::Coordinates &end_effector)
 {
     std::pair<Eigen::Vector3f, Eigen::Vector3f> theta({Eigen::Vector3f(0, 0, 0), Eigen::Vector3f(0, 0, 0)});
@@ -54,7 +61,7 @@ std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKin
     Eigen::Vector3f i_unit_end, k_unit_end;
     Eigen::Vector3f u, v;
     Eigen::Vector2f theta2;
-    float psi = PI / 2;
+    const float psi = PI / 2;
 
     i_unit_base = base_frame.block<3, 1>(0, 0);
     i_unit_end = end_effector.frame.block<3, 1>(0, 0);
