@@ -4,7 +4,7 @@
 /// @TODO Verify this
 #define RSENSE 0.11f
 
-uint8_t RobotTweezers::Actuator::enable = 12;
+uint8_t RobotTweezers::Actuator::enable = 10;
 
 RobotTweezers::Actuator::Actuator() : driver(), uart(nullptr, RSENSE, 0b00) {}
 

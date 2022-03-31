@@ -1,0 +1,6 @@
+[submodule "robot-tweezers-protobuf"]
+	path = robot-tweezers-protobuf
+	url = https://github.com/JakeCronin1997/robot-tweezers-protobuf.git
+[submodule "lib/robot-tweezers-protobuf"]
+	path = lib/robot-tweezers-protobuf
+	url = https://github.com/JakeCronin1997/robot-tweezers-protobuf.git
