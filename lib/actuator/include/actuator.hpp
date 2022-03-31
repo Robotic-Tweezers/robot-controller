@@ -122,6 +122,8 @@ namespace RobotTweezers
          */
         float GetPosition(void);
 
+        void SetPosition(float position);
+
         /**
          * @brief Set Motion Limits
          * 
@@ -199,12 +201,16 @@ namespace RobotTweezers
          */
         static Eigen::Vector3f GetPosition(Actuator *actuators[], uint8_t size);
 
+        static void SetPosition(Actuator *actuators[], const Eigen::Vector3f &position, uint8_t size);
+
         /**
          * @brief Run speed driver for all steppers
          *
          * @param actuators Array of actuators containing stepper objects 
          * @param size      Number of steppers
          */
+        static void RunSpeed(Actuator *actuators[], uint8_t size);
+
         static void Run(Actuator *actuators[], uint8_t size);
     };
 }

@@ -1,9 +1,13 @@
 #ifndef _CONFIG_HPP_
 #define _CONFIG_HPP_
 
-#define VERSION_MAJOR 0
+#define VERSION_MAJOR 1
 #define VERSION_MINOR 0
 
+/**
+ * @brief Task periods
+ * 
+ */
 #define PWM_LOOP_RATE 100 // Stepper PWM rate in us
 #define CONTROLLER_LOOP_RATE 50 // Controller loop rate in ms
 #define INTERFACE_LOOP_RATE 100  // Serial loop rate in ms
@@ -12,14 +16,16 @@
  * @brief Interface configurations
  *
  */
-#define QUEUE_MAX_SIZE 100
-#define MAX_JSON_SIZE 256
 #define INTERFACE_BAUDRATE 921600
 
 /**
  * @brief Controller configurations
  *
  */
+//
+#define MESSAGE_QUEUE_DEPTH (1U)
+#define RECIEVE_BUFFER_SIZE (128U)
+
 // Translational control not used
 #if 0
     #define POSITION_GAIN_X 0.00f // Gain for position in x
@@ -48,7 +54,7 @@
  */
 #define ACTUATORS 3
 #define ACTUATOR_BAUDRATE 460800
-#define ENABLE_PIN 12 // Enable pin
+#define ENABLE_PIN 8 // Enable pin
 
 #define THETA0_STALL 8 // TMC2209 Driver 0 stall value for homing
 #define THETA1_STALL 8 // TMC2209 Driver 1 stall value for homing
@@ -58,17 +64,13 @@
 #define THETA1_ADDRESS 0b01 // TMC2209 Driver address according to MS1 and MS2
 #define THETA2_ADDRESS 0b10 // TMC2209 Driver address according to MS1 and MS2
 
-#define THETA0_STEP 2 // Teensy 4.0 step PWM pin for actuator 0
+#define THETA0_STEP 3 // Teensy 4.0 step PWM pin for actuator 0
 #define THETA1_STEP 5 // Teensy 4.0 step PWM pin for actuator 1
-#define THETA2_STEP 8 // Teensy 4.0 step PWM pin for actuator 2
+#define THETA2_STEP 7 // Teensy 4.0 step PWM pin for actuator 2
 
-#define THETA0_DIRECTION 4  // Direction pin for actuator 0
-#define THETA1_DIRECTION 7  // Direction pin for actuator 1
-#define THETA2_DIRECTION 10 // Direction pin for actuator 2
-
-#define THETA0_STEP_COUNT 3 // Interrupt pin for actuator 0 step count
-#define THETA1_STEP_COUNT 6 // Interrupt pin for actuator 1 step count
-#define THETA2_STEP_COUNT 9 // Interrupt pin for actuator 2 step count
+#define THETA0_DIRECTION 2  // Direction pin for actuator 0
+#define THETA1_DIRECTION 4  // Direction pin for actuator 1
+#define THETA2_DIRECTION 6  // Direction pin for actuator 2
 
 #define THETA0_MOTION_MIN (-PI)
 #define THETA0_MOTION_MAX (PI)
