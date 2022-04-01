@@ -172,17 +172,40 @@ static void ControlLoop(void *arg)
     }
 }
 
+static bool TestEsp32Connection(void)
+{
+    UartConnection connection_msg, response;
+    int8_t attempts = 5;
+    bool status = false;
+
+    connection_msg.id = TEENSY_ID;
+
+    while (attempts--)
+    {
+        Protobuf::UartWrite(&interface_serial, &connection_msg);
+        if (Protobuf::UartRead(&interface_serial, &response))
+        {
+            if (response.id == ESP32_ID)
+            {
+                status = true;
+                break;
+            }
+        }
+        
+        delay(1000);
+    }
+
+    return status;
+}
+
 static void SerialInterface(void *arg)
 {
-    HardwareSerial *uart = static_cast<HardwareSerial *>(arg);
     OrientationMsg message;
     TickType_t previous_wake = 0;
 
-    uart->begin(PROTOBUF_INTERFACE_BAUDRATE);
-
     while (true)
     {
-        if (Protobuf::UartRead(uart, &message))
+        if (Protobuf::UartRead(&interface_serial, &message))
         {
             if (uxQueueMessagesWaiting(controller_queue) < MESSAGE_QUEUE_DEPTH)
             {
@@ -219,7 +242,6 @@ static void SerialInterface(void *arg)
 void setup()
 {
     portBASE_TYPE status = pdPASS;
-    HardwareSerial *actuator_serial = &Serial1;
     Logger logger(&Serial);
 
     Serial.begin(115200);
@@ -230,8 +252,14 @@ void setup()
     // Set pin and enable all actuators
     Actuator::SetEnablePin(ENABLE_PIN);
 
-    actuator_serial->begin(ACTUATOR_BAUDRATE);
-    status &= InitializeActuators(actuator_serial);
+    actuator_serial.begin(ACTUATOR_BAUDRATE);
+    interface_serial.begin(PROTOBUF_INTERFACE_BAUDRATE);
+
+    // Small delay before checking connections
+    delay(1000);
+
+    status &= TestEsp32Connection();
+    status &= InitializeActuators(&actuator_serial);
 
     // Set Kinematic information
     Kinematic::SetDegreesOfFreedom(ACTUATORS);
@@ -254,6 +282,7 @@ void setup()
     }
 
     logger.Log("Actuator motors initialized successfully.");
+
     Actuator::Enable();
 
 #if 0 // Need to add sensorless homeing to robot 
@@ -272,7 +301,7 @@ void setup()
 
     // Rate Monotonic scheduling
     status &= xTaskCreate(RunSteppers, "Run Steppers", configMINIMAL_SECURE_STACK_SIZE, nullptr, 0, &run_stepper_handle);
-    status &= xTaskCreate(SerialInterface, "Interface", 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial4, 1, &interface_handle);
+    status &= xTaskCreate(SerialInterface, "Interface", 10 * configMINIMAL_SECURE_STACK_SIZE, nullptr, 1, &interface_handle);
     status &= xTaskCreate(ControlLoop, "Controller", 100 * configMINIMAL_SECURE_STACK_SIZE, nullptr, 2, &controller_handle);
 
     if (status != pdPASS)

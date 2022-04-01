@@ -12,6 +12,13 @@
 #define INTERFACE_LOOP_RATE 100 // Serial loop rate in ms
 
 /**
+ * @brief Serial mappings
+ * 
+ */
+#define actuator_serial Serial1
+#define interface_serial Serial4
+
+/**
  * @brief Controller configurations
  *
  */
