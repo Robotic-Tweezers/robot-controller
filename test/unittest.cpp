@@ -41,8 +41,29 @@ void setup()
     UNITY_BEGIN();
     Serial.println("Robot Tweezers test build");
 
-    // RUN_TEST(unittest_InverseKinematics);
-    
+    // Coordinates tests
+    RUN_TEST(unittest_SetFrameOrigin);
+    RUN_TEST(unittest_SetCoordinates);
+    RUN_TEST(unittest_SubtractOperator);
+    RUN_TEST(unittest_EqualsOperator);
+    RUN_TEST(unittest_MultiplyOperator);
+
+    // Kinematic tests
+    RUN_TEST(Kinematic_setup);
+    RUN_TEST(unittest_DenavitHartenbergTransform);
+    RUN_TEST(unittest_UpdateDenavitHartenbergTable);
+    RUN_TEST(unittest_DirectKinematics);
+    RUN_TEST(unittest_InverseKinematics);
+    RUN_TEST(unittest_Jacobian);
+
+    // Utilities tests
+    RUN_TEST(unittest_skew3);
+    RUN_TEST(unittest_xRotation);
+    RUN_TEST(unittest_zRotation);
+    RUN_TEST(unittest_Kahan_problem1);
+    RUN_TEST(unittest_Kahan_problem2);
+    RUN_TEST(unittest_Kahan_problem3);
+    RUN_TEST(unittest_Kahan_problem4);
 }
 
 void loop()

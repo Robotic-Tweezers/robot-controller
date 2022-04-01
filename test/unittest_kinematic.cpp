@@ -2,6 +2,7 @@
 #include <unity.h>
 
 #include <kinematic.hpp>
+#include <config.hpp>
 
 using namespace RobotTweezers;
 using namespace Eigen;

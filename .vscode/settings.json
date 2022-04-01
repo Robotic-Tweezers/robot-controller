@@ -56,6 +56,7 @@
         "iomanip": "cpp",
         "mutex": "cpp",
         "*.ipp": "cpp",
-        "rope": "cpp"
+        "rope": "cpp",
+        "*.tpp": "cpp"
     }
 }

@@ -5,7 +5,6 @@
 #include <coordinates.hpp>
 #include <actuator.hpp>
 #include <logger.hpp>
-
 #include <protobuf.hpp>
 
 #define TIME_IN_MS(TIME) (TIME) * configTICK_RATE_HZ / 1000UL
@@ -23,13 +22,41 @@ TaskHandle_t interface_handle;
 // Message queue
 QueueHandle_t controller_queue;
 
-// Constant gain matricies
-const Matrix3f kp = ToDiagnol3(POSITION_GAIN_R, POSITION_GAIN_P, POSITION_GAIN_W);
-const Matrix3f kv = ToDiagnol3(VELOCITY_GAIN_R, VELOCITY_GAIN_P, VELOCITY_GAIN_W);
-
 // Controller variables
+Vector3f joint_state;
 Actuator *actuators[ACTUATORS];
-Vector6f joint_state;
+ActuatorSettings actuator_settings[ACTUATORS] = {
+    ActuatorSettings{
+        .motion_limits = {
+            .min = THETA0_MOTION_MIN,
+            .max = THETA0_MOTION_MAX},
+        .gear_ratio = THETA0_GEAR_RATIO,
+        .stall_threshold = THETA0_STALL,
+        .step = THETA0_STEP,
+        .direction = THETA0_DIRECTION,
+        .uart_address = THETA0_ADDRESS
+    },
+    ActuatorSettings{
+        .motion_limits = {
+            .min = THETA1_MOTION_MIN,
+            .max = THETA1_MOTION_MAX},
+        .gear_ratio = THETA1_GEAR_RATIO,
+        .stall_threshold = THETA1_STALL,
+        .step = THETA1_STEP,
+        .direction = THETA1_DIRECTION,
+        .uart_address = THETA1_ADDRESS
+    },
+    ActuatorSettings{
+        .motion_limits = {
+            .min = THETA2_MOTION_MIN,
+            .max = THETA2_MOTION_MAX},
+        .gear_ratio = THETA2_GEAR_RATIO,
+        .stall_threshold = THETA2_STALL,
+        .step = THETA2_STEP,
+        .direction = THETA2_DIRECTION,
+        .uart_address = THETA2_ADDRESS
+    }
+};
 
 /// @brief The DH transformation parameters for the wrist manipulator (translational x-axis component is omitted)
 float dh_table[3][3] = {
@@ -48,38 +75,10 @@ float dh_table[3][3] = {
 static bool InitializeActuators(HardwareSerial *serial)
 {
     bool status = true;
-    ActuatorSettings settings[ACTUATORS];
-    settings[0] = ActuatorSettings{
-        .motion_limits = {
-            .min = THETA0_MOTION_MIN,
-            .max = THETA0_MOTION_MAX},
-        .gear_ratio = THETA0_GEAR_RATIO,
-        .stall_threshold = THETA0_STALL,
-        .step = THETA0_STEP,
-        .direction = THETA0_DIRECTION,
-        .uart_address = THETA0_ADDRESS};
-    settings[1] = ActuatorSettings{
-        .motion_limits = {
-            .min = THETA1_MOTION_MIN,
-            .max = THETA1_MOTION_MAX},
-        .gear_ratio = THETA1_GEAR_RATIO,
-        .stall_threshold = THETA1_STALL,
-        .step = THETA1_STEP,
-        .direction = THETA1_DIRECTION,
-        .uart_address = THETA1_ADDRESS};
-    settings[2] = ActuatorSettings{
-        .motion_limits = {
-            .min = THETA2_MOTION_MIN,
-            .max = THETA2_MOTION_MAX},
-        .gear_ratio = THETA2_GEAR_RATIO,
-        .stall_threshold = THETA2_STALL,
-        .step = THETA2_STEP,
-        .direction = THETA2_DIRECTION,
-        .uart_address = THETA2_ADDRESS};
 
     for (uint8_t i = 0; i < ACTUATORS; i++)
     {
-        status &= (actuators[i] = Actuator::ActuatorFactory(serial, settings[i])) != nullptr;
+        status &= (actuators[i] = Actuator::ActuatorFactory(serial, actuator_settings[i])) != nullptr;
     }
 
     return status;
@@ -128,7 +127,11 @@ static void RunSteppers(void *arg)
 
     while (true)
     {
-        Actuator::Run(actuators, ACTUATORS);
+        for (uint8_t i = 0; i < ACTUATORS; i++)
+        {
+            actuators[i]->driver.run();
+        }
+
         vTaskDelayUntil(&previous_wake, TIME_IN_US(PWM_LOOP_RATE));
     }
 }
@@ -143,19 +146,25 @@ static void ControlLoop(void *arg)
     pair<Vector3f, Vector3f> solutions;
     Vector3f new_position;
     OrientationMsg new_msg;
-    TickType_t previous_wake = 0;
 
     while (true)
     {
         if (xQueueReceive(controller_queue, (void *)&new_msg, 0) == pdTRUE)
         {
-            joint_state.head(3) = Actuator::GetPosition(actuators, ACTUATORS);
+            for (uint8_t i = 0; i < ACTUATORS; i++)
+            {
+                joint_state(i) = actuators[i]->GetPosition();
+            }
+            
             // Find all possible solutions for achieving desired orientation
             solutions = Kinematic::InverseKinematics(new_msg.roll, new_msg.pitch, new_msg.yaw);
             // Select desired state, using initial state
-            new_position = Decision(joint_state.head(3), solutions);
+            new_position = Decision(joint_state, solutions);
 
-            Actuator::SetPosition(actuators, new_position, ACTUATORS);
+            for (uint8_t i = 0; i < ACTUATORS; i++)
+            {
+                actuators[i]->SetTargetPosition(new_position(i));
+            }
         }
 
         // Sleep while drivers are moving robot
@@ -169,11 +178,11 @@ static void SerialInterface(void *arg)
     OrientationMsg message;
     TickType_t previous_wake = 0;
 
-    uart->begin(INTERFACE_BAUDRATE);
+    uart->begin(PROTOBUF_INTERFACE_BAUDRATE);
 
     while (true)
     {
-        if (Protobuf::UartWrite(uart, &message))
+        if (Protobuf::UartRead(uart, &message))
         {
             if (uxQueueMessagesWaiting(controller_queue) < MESSAGE_QUEUE_DEPTH)
             {
@@ -213,7 +222,7 @@ void setup()
     HardwareSerial *actuator_serial = &Serial1;
     Logger logger(&Serial);
 
-    Serial.begin(INTERFACE_BAUDRATE);
+    Serial.begin(115200);
     logger.Log("Starting Robot, firmware version %d.%d", VERSION_MAJOR, VERSION_MINOR);
 
     controller_queue = xQueueCreate(MESSAGE_QUEUE_DEPTH, sizeof(OrientationMsg));
@@ -236,7 +245,11 @@ void setup()
 
     if (status != pdPASS)
     {
-        Actuator::Delete(actuators, ACTUATORS);
+        for (uint8_t i = 0; i < ACTUATORS; i++)
+        {
+            delete actuators[i];
+        }
+
         logger.Error("Actuators did not initialize properly, check UART or power connection");
     }
 
@@ -264,13 +277,21 @@ void setup()
 
     if (status != pdPASS)
     {
-        Actuator::Delete(actuators, ACTUATORS);
+        for (uint8_t i = 0; i < ACTUATORS; i++)
+        {
+            delete actuators[i];
+        }
+        
         logger.Error("Creation problem");
     }
 
     vTaskStartScheduler();
 
-    Actuator::Delete(actuators, ACTUATORS);
+    for (uint8_t i = 0; i < ACTUATORS; i++)
+    {
+        delete actuators[i];
+    }
+
     logger.Error("Insufficient RAM");
 }
 

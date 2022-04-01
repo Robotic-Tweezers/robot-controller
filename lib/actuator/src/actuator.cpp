@@ -30,7 +30,7 @@ float RobotTweezers::Actuator::StepsToRadians(long steps, float gear_ratio, uint
 
 long RobotTweezers::Actuator::RadiansToSteps(float radians, float gear_ratio, uint16_t microstep)
 {
-    return microstep != 0 ? radians * STEPS * microstep * gear_ratio / (2.00f * PI) : 0.00;
+    return radians * STEPS * microstep * gear_ratio / (2.00f * PI);
 }
 
 bool RobotTweezers::Actuator::Initialize(void)
@@ -68,7 +68,7 @@ float RobotTweezers::Actuator::GetPosition(void)
     return StepsToRadians(steps, gear_ratio, microstep);
 }
 
-void RobotTweezers::Actuator::SetPosition(float position)
+void RobotTweezers::Actuator::SetTargetPosition(float position)
 {
     long position_steps = RadiansToSteps(position, gear_ratio, microstep);
     driver.moveTo(position_steps);
@@ -85,7 +85,7 @@ void RobotTweezers::Actuator::SetGearRatio(float gear_ratio)
     this->gear_ratio = gear_ratio;
 }
 
-bool RobotTweezers::Actuator::Home(float home_position)
+bool RobotTweezers::Actuator::Home(float limit_position)
 {
     SetVelocity(1);
     do
@@ -97,7 +97,7 @@ bool RobotTweezers::Actuator::Home(float home_position)
 
     if (GetPosition() <= TWO_PI)
     {
-        driver.setCurrentPosition(RadiansToSteps(home_position, gear_ratio, microstep));
+        driver.setCurrentPosition(RadiansToSteps(limit_position, gear_ratio, microstep));
         return true;
     }
 
@@ -126,55 +126,4 @@ void RobotTweezers::Actuator::Enable(void)
 void RobotTweezers::Actuator::Disable(void)
 {
     return digitalWrite(enable, HIGH);
-}
-
-void RobotTweezers::Actuator::Delete(RobotTweezers::Actuator *actuators[], uint8_t size)
-{
-    for (uint8_t i = 0; i < size; i++)
-    {
-        delete actuators[i];
-    }
-}
-
-void RobotTweezers::Actuator::SetVelocity(RobotTweezers::Actuator *actuators[], const Eigen::Vector3f &velocity, uint8_t size)
-{
-    for (uint8_t i = 0; i < size; i++)
-    {
-        actuators[i]->SetVelocity(velocity(i));
-    }
-}
-
-Eigen::Vector3f RobotTweezers::Actuator::GetPosition(RobotTweezers::Actuator *actuators[], uint8_t size)
-{
-    Eigen::Vector3f position;
-    for (uint8_t i = 0; i < size; i++)
-    {
-        position(i) = actuators[i]->GetPosition();
-    }
-
-    return position;
-}
-
-void RobotTweezers::Actuator::SetPosition(RobotTweezers::Actuator *actuators[], const Eigen::Vector3f &position, uint8_t size)
-{
-    for (uint8_t i = 0; i < size; i++)
-    {
-        actuators[i]->SetPosition(position(i));
-    }
-}
-
-void RobotTweezers::Actuator::RunSpeed(RobotTweezers::Actuator *actuators[], uint8_t size)
-{
-    for (uint8_t i = 0; i < size; i++)
-    {
-        actuators[i]->driver.runSpeed();
-    }
-}
-
-void RobotTweezers::Actuator::Run(RobotTweezers::Actuator *actuators[], uint8_t size)
-{
-    for (uint8_t i = 0; i < size; i++)
-    {
-        actuators[i]->driver.run();
-    }
 }
