@@ -1,5 +1,5 @@
-#ifndef _ACTUATOR_SETTINGS_HPP_
-#define _ACTUATOR_SETTINGS_HPP_
+#ifndef ACTUATOR_SETTINGS_HPP
+#define ACTUATOR_SETTINGS_HPP
 
 #include <stdint.h>
 
@@ -12,17 +12,23 @@ namespace RobotTweezers
     struct ActuatorSettings
     {
     public:
+        /// @brief Min and Max motion limits for a given actuator
         struct
         {
             float min;
             float max;
         } motion_limits;
+        /// @brief Actuator gear ratio 
         float gear_ratio;
-        uint16_t stall_threshold; 
+        /// @brief Stall threshold for sensorless homing
+        uint16_t stall_threshold;
+        /// @brief Step pin
         uint8_t step;
+        /// @brief Direction pin
         uint8_t direction;
+        /// @brief Uart address
         uint8_t uart_address;
     };
 }
 
-#endif // _ACTUATOR_SETTINGS_HPP_
+#endif // ACTUATOR_SETTINGS_HPP

@@ -73,8 +73,20 @@ namespace RobotTweezers
          */
         Eigen::Vector6f operator-(const Coordinates& op);
 
+        /**
+         * @brief Multiplication operator for coordinates
+         * 
+         * @param op            Operand
+         * @return Coordinates  Product of coordinates
+         */
         Coordinates operator*(const Coordinates& op);
-
+        
+        /**
+         * @brief Multiplication operator for coordinates
+         * 
+         * @param op            Operand
+         * @return Coordinates  Product of coordinates
+         */
         Coordinates& operator*=(const Coordinates& op);
     };
 }

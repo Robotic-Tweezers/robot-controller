@@ -54,6 +54,9 @@
         "valarray": "cpp",
         "csignal": "cpp",
         "iomanip": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "*.ipp": "cpp",
+        "rope": "cpp",
+        "*.tpp": "cpp"
     }
 }

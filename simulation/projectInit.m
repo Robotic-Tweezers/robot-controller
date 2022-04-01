@@ -14,33 +14,18 @@ end
 fprintf("Project info: \n");
 disp(project);
 
-fprintf("Parsing project configurations from python script...\n");
 repository_directory = extractBefore(project.RootFolder, 'simulation');
-run_config_command = ...
-    'python ' + repository_directory + '\config\defines.py 1';
 
-[status, commandOut] = system(run_config_command);
-
-if status ~= 0
-    fprintf("Error: Failed to execute project configurations.\n");
-    return
-end
-
-parameters = containers.Map;
-params_str = strsplit(commandOut, '\n')';
-params_str(end, :) = [];
-for i=1:size(params_str, 1)
-    param = split(params_str(i))';
-    name = char(param(1));
-    value = char(param(2));
-    if ~isnan(str2double(value))
-        parameters(name) = str2double(value);
-    else
-        parameters(name) = value;
-    end
-end
-
-fprintf("Done.\n");
+robot = createSphericalWrist();
+showdetails(robot);
+% Kp = parameters('KP');
+% Kv = parameters('KV');
+Kp = diag([0.1 0.5 0.2 0.9 0.5 0.9]);
+Kv = diag([0.1 0.5 0.1 0.1 0.5 0.1]);
+length1 = 10;
+length2 = 15;
+theta_0 = [0 0 0]';
+DOF = 3;
 
 fprintf("Running unit tests...\n");
 
@@ -51,18 +36,6 @@ for i = 1:size(project.Files, 2)
         run(script);
     end
 end
-
-robot = createSphericalWrist();
-showdetails(robot);
-% Kp = parameters('KP');
-% Kv = parameters('KV');
-Kp = diag([0.1 0.5 0.2 0.9 0.5 0.9]);
-Kv = diag([0.1 0.5 0.1 0.1 0.5 0.1]);
-length1 = parameters('LENGTH1');
-length2 = parameters('LENGTH2');
-theta_0 = [0 0 0]';
-theta_dot_0 = [0 0 0]';
-DOF = 3;
 
 fprintf("Setup complete, cleaning workspace.\n");
 

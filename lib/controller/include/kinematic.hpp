@@ -46,15 +46,29 @@ namespace RobotTweezers
          */
         static Coordinates DirectKinematics(const float dh_table[][3]);
 
+        /**
+         * @brief Calculates the joint states that achieve the orientation specified by XYZ Euler angles
+         * 
+         * @param roll  X-axis Euler Angle
+         * @param pitch Y-axis Euler Angle
+         * @param yaw   Z-axis Euler Angle
+         * @return std::pair<Eigen::Vector3f, Eigen::Vector3f> Both possible solutions for the current orientation
+         */
         static std::pair<Eigen::Vector3f, Eigen::Vector3f> InverseKinematics(const float roll, const float pitch, const float yaw);
 
+        /**
+         * @brief Calculates the joint angles that achieve the desired frame
+         * 
+         * @param end_effector Desired frame
+         * @return std::pair<Eigen::Vector3f, Eigen::Vector3f> Both possible solutions for the current orientation
+         */
         static std::pair<Eigen::Vector3f, Eigen::Vector3f> InverseKinematics(const RobotTweezers::Coordinates &end_effector);
 
         /**
-         * @brief 
+         * @brief Calculates the Jacobian matrix for a given state
          * 
-         * @param dh_table 
-         * @return Eigen::MatrixXf 
+         * @param dh_table          Denavit Hartenberg parameters representing the robots current state
+         * @return Eigen::MatrixXf  6x3 Jacobian matrix
          */
         static Eigen::MatrixXf Jacobian(const float dh_table[][3]);
 

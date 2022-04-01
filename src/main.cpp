@@ -5,24 +5,14 @@
 #include <coordinates.hpp>
 #include <actuator.hpp>
 #include <logger.hpp>
+#include <protobuf.hpp>
 
 #define TIME_IN_MS(TIME) (TIME) * configTICK_RATE_HZ / 1000UL
 #define TIME_IN_US(TIME) (TIME) * configTICK_RATE_HZ / 1000000UL
 
-#define CONTROLLER_QUEUE_SIZE (1024U)
-
-#define DEMO 1
-
 using namespace std;
 using namespace Eigen;
 using namespace RobotTweezers;
-
-typedef struct Message
-{
-    float roll;
-    float pitch;
-    float yaw;
-} Message;
 
 // Task handles
 TaskHandle_t run_stepper_handle;
@@ -32,43 +22,41 @@ TaskHandle_t interface_handle;
 // Message queue
 QueueHandle_t controller_queue;
 
-// Constant gain matricies
-const Matrix3f kp = ToDiagnol3(POSITION_GAIN_R, POSITION_GAIN_P, POSITION_GAIN_W);
-const Matrix3f kv = ToDiagnol3(VELOCITY_GAIN_R, VELOCITY_GAIN_P, VELOCITY_GAIN_W);
-
 // Controller variables
+Vector3f joint_state;
 Actuator *actuators[ACTUATORS];
-Vector6f joint_state;
-
-#if DEMO
-    Message demo[] = {
-        Message{.roll =  3.1416, .pitch =  0.0000, .yaw =  0.0000},
-        Message{.roll =  3.1416, .pitch = -0.2618, .yaw =  0.0000},
-        Message{.roll =  3.1416, .pitch = -0.5236, .yaw =  0.0000},
-        Message{.roll =  3.1416, .pitch = -0.7854, .yaw =  0.0000},
-        Message{.roll =  3.1416, .pitch = -1.0472, .yaw =  0.0000},
-        Message{.roll = -3.1416, .pitch = -1.3090, .yaw =  0.0000},
-        Message{.roll =  0.0000, .pitch = -1.5708, .yaw = -3.1416},
-        Message{.roll = -1.5708, .pitch = -1.3090, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch = -1.0472, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch = -0.7854, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch = -0.5236, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch = -0.2618, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch =  0.0000, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch =  0.2618, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch =  0.5236, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch =  0.7854, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch =  1.0472, .yaw =  1.5708},
-        Message{.roll = -1.5708, .pitch =  1.3090, .yaw =  1.5708},
-        Message{.roll =  0.0000, .pitch =  1.5708, .yaw = -0.0000},
-        Message{.roll = -3.1416, .pitch =  1.3090, .yaw =  3.1416},
-        Message{.roll = -3.1416, .pitch =  1.0472, .yaw =  3.1416},
-        Message{.roll =  3.1416, .pitch =  0.7854, .yaw =  3.1416},
-        Message{.roll =  3.1416, .pitch =  0.5236, .yaw =  3.1416},
-        Message{.roll =  3.1416, .pitch =  0.2618, .yaw =  3.1416},
-        Message{.roll =  3.1416, .pitch =  0.0000, .yaw =  3.1416},
-    };
-#endif
+ActuatorSettings actuator_settings[ACTUATORS] = {
+    ActuatorSettings{
+        .motion_limits = {
+            .min = THETA0_MOTION_MIN,
+            .max = THETA0_MOTION_MAX},
+        .gear_ratio = THETA0_GEAR_RATIO,
+        .stall_threshold = THETA0_STALL,
+        .step = THETA0_STEP,
+        .direction = THETA0_DIRECTION,
+        .uart_address = THETA0_ADDRESS
+    },
+    ActuatorSettings{
+        .motion_limits = {
+            .min = THETA1_MOTION_MIN,
+            .max = THETA1_MOTION_MAX},
+        .gear_ratio = THETA1_GEAR_RATIO,
+        .stall_threshold = THETA1_STALL,
+        .step = THETA1_STEP,
+        .direction = THETA1_DIRECTION,
+        .uart_address = THETA1_ADDRESS
+    },
+    ActuatorSettings{
+        .motion_limits = {
+            .min = THETA2_MOTION_MIN,
+            .max = THETA2_MOTION_MAX},
+        .gear_ratio = THETA2_GEAR_RATIO,
+        .stall_threshold = THETA2_STALL,
+        .step = THETA2_STEP,
+        .direction = THETA2_DIRECTION,
+        .uart_address = THETA2_ADDRESS
+    }
+};
 
 /// @brief The DH transformation parameters for the wrist manipulator (translational x-axis component is omitted)
 float dh_table[3][3] = {
@@ -78,47 +66,19 @@ float dh_table[3][3] = {
 };
 
 /**
- * @brief 
- * 
- * @param serial 
- * @return true 
- * @return false 
+ * @brief
+ *
+ * @param serial
+ * @return true
+ * @return false
  */
 static bool InitializeActuators(HardwareSerial *serial)
 {
     bool status = true;
-    ActuatorSettings settings[ACTUATORS];
-    settings[0] = ActuatorSettings{
-        .motion_limits = {
-            .min = THETA0_MOTION_MIN,
-            .max = THETA0_MOTION_MAX},
-        .gear_ratio = THETA0_GEAR_RATIO,
-        .stall_threshold = THETA0_STALL,
-        .step = THETA0_STEP,
-        .direction = THETA0_DIRECTION,
-        .uart_address = THETA0_ADDRESS};
-    settings[1] = ActuatorSettings{
-        .motion_limits = {
-            .min = THETA1_MOTION_MIN,
-            .max = THETA1_MOTION_MAX},
-        .gear_ratio = THETA1_GEAR_RATIO,
-        .stall_threshold = THETA1_STALL,
-        .step = THETA1_STEP,
-        .direction = THETA1_DIRECTION,
-        .uart_address = THETA1_ADDRESS};
-    settings[2] = ActuatorSettings{
-        .motion_limits = {
-            .min = THETA2_MOTION_MIN,
-            .max = THETA2_MOTION_MAX},
-        .gear_ratio = THETA2_GEAR_RATIO,
-        .stall_threshold = THETA2_STALL,
-        .step = THETA2_STEP,
-        .direction = THETA2_DIRECTION,
-        .uart_address = THETA2_ADDRESS};
 
     for (uint8_t i = 0; i < ACTUATORS; i++)
     {
-        status &= (actuators[i] = Actuator::ActuatorFactory(serial, settings[i])) != nullptr;
+        status &= (actuators[i] = Actuator::ActuatorFactory(serial, actuator_settings[i])) != nullptr;
     }
 
     return status;
@@ -126,14 +86,15 @@ static bool InitializeActuators(HardwareSerial *serial)
 
 /**
  * @brief Simple decision logic to determine which of two solutions will be used for trajectory
- * 
- * @param position 
- * @param solutions 
- * @return Eigen::Vector3f 
+ *
+ * @param position
+ * @param solutions
+ * @return Eigen::Vector3f
  */
 static Eigen::Vector3f Decision(Vector3f position, std::pair<Eigen::Vector3f, Eigen::Vector3f> &solutions)
 {
     float distance1, distance2;
+
     for (int i = 0; i < position.rows(); i++)
     {
         // Check for edge case: if the desired pos is pi, change sign to match current pose
@@ -141,111 +102,137 @@ static Eigen::Vector3f Decision(Vector3f position, std::pair<Eigen::Vector3f, Ei
         {
             solutions.first(i) = (position(i) > 0) ? PI : -PI;
         }
-        
+
         // Check for edge case: if the desired pos is pi, change sign to match current pose
         if (IsEqual(abs(solutions.second(i)), PI, 0.01))
         {
             solutions.second(i) = (position(i) > 0) ? PI : -PI;
         }
     }
+
     distance1 = sqrt((solutions.first - position).norm());
     distance2 = sqrt((solutions.second - position).norm());
+
     return (distance1 < distance2) ? solutions.first : solutions.second;
 }
 
 /**
- * @brief 
- * 
- * @param arg 
+ * @brief
+ *
+ * @param arg
  */
 static void RunSteppers(void *arg)
 {
     TickType_t previous_wake = 0;
+
     while (true)
     {
-        Actuator::Run(actuators, ACTUATORS);
+        for (uint8_t i = 0; i < ACTUATORS; i++)
+        {
+            actuators[i]->driver.run();
+        }
+
         vTaskDelayUntil(&previous_wake, TIME_IN_US(PWM_LOOP_RATE));
     }
 }
 
 /**
- * @brief 
- * 
- * @param arg 
+ * @brief
+ *
+ * @param arg
  */
 static void ControlLoop(void *arg)
 {
     pair<Vector3f, Vector3f> solutions;
-    Vector6f desired_state, state_error;
-    Message new_msg;
-    TickType_t previous_wake = 0;
-    
+    Vector3f new_position;
+    OrientationMsg new_msg;
+
     while (true)
     {
-        // Update joint positions
-        joint_state.head(3) = Actuator::GetPosition(actuators, ACTUATORS);
-
-        // State error
-        state_error = desired_state - joint_state;
-
-        // State error is at required minimum
-        if (sqrt(state_error.dot(state_error)) <= STATE_ERROR)
+        if (xQueueReceive(controller_queue, (void *)&new_msg, 0) == pdTRUE)
         {
-            if (xQueueReceive(controller_queue, (void *)&new_msg, 0) == pdTRUE)
+            for (uint8_t i = 0; i < ACTUATORS; i++)
             {
-                // Find all possible solutions for achieving desired orientation
-                solutions = Kinematic::InverseKinematics(new_msg.roll, new_msg.pitch, new_msg.yaw);
-                // Select desired state, using initial state
-                desired_state.head(3) = Decision(joint_state.head(3), solutions);
-                
+                joint_state(i) = actuators[i]->GetPosition();
             }
-            else 
+            
+            // Find all possible solutions for achieving desired orientation
+            solutions = Kinematic::InverseKinematics(new_msg.roll, new_msg.pitch, new_msg.yaw);
+            // Select desired state, using initial state
+            new_position = Decision(joint_state, solutions);
+
+            for (uint8_t i = 0; i < ACTUATORS; i++)
             {
-                Actuator::SetVelocity(actuators, Vector3f(0, 0, 0), ACTUATORS);
-                vTaskSuspend(controller_handle);
+                actuators[i]->SetTargetPosition(new_position(i));
             }
         }
 
-        // Update joint velocity
-        joint_state.tail(3) = (kp * state_error.head(3)) + (kv * state_error.tail(3));
-
-        // Set new velocity
-        Actuator::SetVelocity(actuators, joint_state.tail(3), ACTUATORS);
-
-        vTaskDelayUntil(&previous_wake, TIME_IN_MS(CONTROLLER_LOOP_RATE));
+        // Sleep while drivers are moving robot
+        vTaskSuspend(controller_handle);
     }
+}
+
+static bool TestEsp32Connection(void)
+{
+    UartConnection connection_msg, response;
+    int8_t attempts = 5;
+    bool status = false;
+
+    connection_msg.id = TEENSY_ID;
+
+    while (attempts--)
+    {
+        Protobuf::UartWrite(&interface_serial, &connection_msg);
+        if (Protobuf::UartRead(&interface_serial, &response))
+        {
+            if (response.id == ESP32_ID)
+            {
+                status = true;
+                break;
+            }
+        }
+        
+        delay(1000);
+    }
+
+    return status;
 }
 
 static void SerialInterface(void *arg)
 {
-    Stream *client_interface = static_cast<Stream *>(arg);
+    OrientationMsg message;
     TickType_t previous_wake = 0;
 
     while (true)
     {
-        if (client_interface->available() > 0)
+        if (Protobuf::UartRead(&interface_serial, &message))
         {
-            /*
-            if (gui_command.containsKey("position"))
+            if (uxQueueMessagesWaiting(controller_queue) < MESSAGE_QUEUE_DEPTH)
             {
-                Coordinates new_coords;
-                float roll_anlge = gui_command["position"]["roll"];
-                float pitch_angle = gui_command["position"]["pitch"];
-                float yaw_angle = gui_command["position"]["yaw"];
-                new_coords.frame = EulerXYZToRotation(roll_anlge, pitch_angle, yaw_angle);
-                if (position_queue.isEmpty())
-                {
-                    // Resume controller
-                    vTaskResume(controller_handle);
-                }
-
-                if (position_queue.size() <= QUEUE_MAX_SIZE)
-                {
-                    xQueueSend(controller_queue, )
-                    position_queue.push(new_coords);
-                }
+                xQueueSend(controller_queue, (void *)&message, 0);
+                // Resume controller
+                vTaskResume(controller_handle);
             }
-            */
+#if MESSAGE_QUEUE_DEPTH == 1
+            else
+            {
+                // Not advised to use overwrite if the queue size is larger than 1
+                xQueueOverwrite(controller_queue, (void *)&message);
+            }
+#else
+            else if (uxQueueSpacesAvailable(controller_queue) >= 1)
+            {
+                xQueueSend(controller_queue, (void *)&message, 0);
+            }
+            else
+            {
+                OrientationMsg removed_msg;
+                // remove oldest message
+                xQueueReceive(controller_queue, (void *)&removed_msg, 0);
+                // add new message
+                xQueueSend(controller_queue, (void *)&message, 0);
+            }
+#endif
         }
 
         vTaskDelayUntil(&previous_wake, TIME_IN_MS(INTERFACE_LOOP_RATE));
@@ -255,19 +242,24 @@ static void SerialInterface(void *arg)
 void setup()
 {
     portBASE_TYPE status = pdPASS;
-    HardwareSerial *actuator_serial = &Serial1;
     Logger logger(&Serial);
 
-    Serial.begin(INTERFACE_BAUDRATE);
+    Serial.begin(115200);
     logger.Log("Starting Robot, firmware version %d.%d", VERSION_MAJOR, VERSION_MINOR);
 
-    controller_queue = xQueueCreate(CONTROLLER_QUEUE_SIZE, sizeof(Message));
- 
+    controller_queue = xQueueCreate(MESSAGE_QUEUE_DEPTH, sizeof(OrientationMsg));
+
     // Set pin and enable all actuators
     Actuator::SetEnablePin(ENABLE_PIN);
 
-    actuator_serial->begin(ACTUATOR_BAUDRATE);
-    status &= InitializeActuators(actuator_serial);
+    actuator_serial.begin(ACTUATOR_BAUDRATE);
+    interface_serial.begin(PROTOBUF_INTERFACE_BAUDRATE);
+
+    // Small delay before checking connections
+    delay(1000);
+
+    status &= TestEsp32Connection();
+    status &= InitializeActuators(&actuator_serial);
 
     // Set Kinematic information
     Kinematic::SetDegreesOfFreedom(ACTUATORS);
@@ -281,11 +273,16 @@ void setup()
 
     if (status != pdPASS)
     {
-        Actuator::Delete(actuators, ACTUATORS);
+        for (uint8_t i = 0; i < ACTUATORS; i++)
+        {
+            delete actuators[i];
+        }
+
         logger.Error("Actuators did not initialize properly, check UART or power connection");
     }
 
     logger.Log("Actuator motors initialized successfully.");
+
     Actuator::Enable();
 
 #if 0 // Need to add sensorless homeing to robot 
@@ -302,27 +299,28 @@ void setup()
 
     logger.Log("Set controller inputs to initial states, spawning controller.");
 
-#if DEMO // Test trajectory used for demo
-    for (unsigned int i = 0; i < sizeof(demo) / sizeof(Message); i++)
-    {
-        xQueueSend(controller_queue, (void *)(demo + i), 0);
-    }
-#endif
-
     // Rate Monotonic scheduling
     status &= xTaskCreate(RunSteppers, "Run Steppers", configMINIMAL_SECURE_STACK_SIZE, nullptr, 0, &run_stepper_handle);
-    status &= xTaskCreate(SerialInterface, "Interface", 10 * configMINIMAL_SECURE_STACK_SIZE, &Serial, 1, &interface_handle);
+    status &= xTaskCreate(SerialInterface, "Interface", 10 * configMINIMAL_SECURE_STACK_SIZE, nullptr, 1, &interface_handle);
     status &= xTaskCreate(ControlLoop, "Controller", 100 * configMINIMAL_SECURE_STACK_SIZE, nullptr, 2, &controller_handle);
 
     if (status != pdPASS)
     {
-        Actuator::Delete(actuators, ACTUATORS);
+        for (uint8_t i = 0; i < ACTUATORS; i++)
+        {
+            delete actuators[i];
+        }
+        
         logger.Error("Creation problem");
     }
-    
+
     vTaskStartScheduler();
 
-    Actuator::Delete(actuators, ACTUATORS);
+    for (uint8_t i = 0; i < ACTUATORS; i++)
+    {
+        delete actuators[i];
+    }
+
     logger.Error("Insufficient RAM");
 }
 
