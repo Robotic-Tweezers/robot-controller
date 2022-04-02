@@ -258,7 +258,9 @@ void setup()
     // Small delay before checking connections
     delay(1000);
 
+#ifdef ESP_CONNECTION
     status &= TestEsp32Connection();
+#endif // ESP_CONNECTION
     status &= InitializeActuators(&actuator_serial);
 
     // Set Kinematic information
@@ -285,11 +287,11 @@ void setup()
 
     Actuator::Enable();
 
-#if 0 // Need to add sensorless homeing to robot 
+#if HOMING // Need to add sensorless homeing to robot 
     status &= actuators[0]->Home(HALF_PI);
     status &= actuators[1]->Home(HALF_PI);
     status &= actuators[2]->Home(HALF_PI);
-#endif
+#endif // HOMING
 
     logger.Log("Home %s", status ? "PASSED" : "FAILED");
 

@@ -87,11 +87,19 @@ void RobotTweezers::Actuator::SetGearRatio(float gear_ratio)
 
 bool RobotTweezers::Actuator::Home(float limit_position)
 {
+    uint32_t last_micros = micros();
+
     SetVelocity(1);
     do
     {
-        driver.runSpeed();
-        delayMicroseconds(100);
+        // let stepper accelerate
+        while (micros() - last_micros >= 100000)
+        {
+            driver.runSpeed();
+        }
+
+        last_micros = micros();
+        Serial.println(uart.SG_RESULT());
     }
     while ((uart.SG_RESULT() > stall_threshold) && (GetPosition() <= TWO_PI));
 
