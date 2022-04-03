@@ -200,7 +200,7 @@ static bool TestEsp32Connection(void)
 
 static void SerialInterface(void *arg)
 {
-    OrientationMsg message;
+    OrientationMsg message = OrientationMsg_init_default;
     TickType_t previous_wake = 0;
 
     while (true)
@@ -210,8 +210,6 @@ static void SerialInterface(void *arg)
             if (uxQueueMessagesWaiting(controller_queue) < MESSAGE_QUEUE_DEPTH)
             {
                 xQueueSend(controller_queue, (void *)&message, 0);
-                // Resume controller
-                vTaskResume(controller_handle);
             }
 #if MESSAGE_QUEUE_DEPTH == 1
             else
@@ -233,6 +231,8 @@ static void SerialInterface(void *arg)
                 xQueueSend(controller_queue, (void *)&message, 0);
             }
 #endif
+            // Resume controller
+            vTaskResume(controller_handle);
         }
 
         vTaskDelayUntil(&previous_wake, TIME_IN_MS(INTERFACE_LOOP_RATE));
@@ -315,6 +315,8 @@ void setup()
         
         logger.Error("Creation problem");
     }
+
+    logger.Log("All tasks created successfully, starting scheduler...");
 
     vTaskStartScheduler();
 

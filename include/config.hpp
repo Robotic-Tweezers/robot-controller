@@ -8,8 +8,8 @@
  * @brief Task periods
  *
  */
-#define PWM_LOOP_RATE 100       // Stepper PWM rate in us
-#define INTERFACE_LOOP_RATE 100 // Serial loop rate in ms
+#define PWM_LOOP_RATE 100      // Stepper PWM rate in us
+#define INTERFACE_LOOP_RATE 10 // Serial loop rate in ms
 
 /**
  * @brief Serial mappings
