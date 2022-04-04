@@ -91,6 +91,10 @@ namespace RobotTweezers
         /// @brief Provides a UART interface to control stepper driver features
         TMC2209Stepper uart;
 
+        static Actuator **actuator_system;
+
+        static uint8_t actuator_count;
+
         /**
          * @brief Initialize TMC2209 UART registers
          *

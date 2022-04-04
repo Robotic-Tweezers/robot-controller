@@ -8,6 +8,10 @@ uint8_t RobotTweezers::Actuator::enable = 10;
 
 RobotTweezers::Actuator::Actuator() : driver(), uart(nullptr, RSENSE, 0b00) {}
 
+RobotTweezers::Actuator **RobotTweezers::Actuator::actuator_system = nullptr;
+
+uint8_t RobotTweezers::Actuator::actuator_count = 3;
+
 RobotTweezers::Actuator::Actuator(HardwareSerial *serial, ActuatorSettings &settings)
     : driver(AccelStepper::DRIVER, settings.step, settings.direction), uart(serial, RSENSE, settings.uart_address)
 {
