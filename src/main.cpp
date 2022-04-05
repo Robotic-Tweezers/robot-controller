@@ -110,8 +110,8 @@ static Eigen::Vector3f Decision(Vector3f position, std::pair<Eigen::Vector3f, Ei
         }
     }
 
-    distance1 = sqrt((solutions.first - position).norm());
-    distance2 = sqrt((solutions.second - position).norm());
+    distance1 = (solutions.first - position).norm();
+    distance2 = (solutions.second - position).norm();
 
     return (distance1 < distance2) ? solutions.first : solutions.second;
 }
@@ -129,11 +129,7 @@ static void RunSteppers(void *arg)
 
     while (true)
     {
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            actuators[i]->driver.run();
-        }
-
+        Actuator::Run();
         vTaskDelayUntil(&previous_wake, TIME_IN_US(PWM_LOOP_RATE));
     }
 }
@@ -155,20 +151,14 @@ static void ControlLoop(void *arg)
     {
         if (xQueueReceive(controller_queue, (void *)&new_msg, 0) == pdTRUE)
         {
-            for (uint8_t i = 0; i < ACTUATORS; i++)
-            {
-                joint_state(i) = actuators[i]->GetPosition();
-            }
+            Actuator::GetPosition(joint_state.data());
             
             // Find all possible solutions for achieving desired orientation
             solutions = Kinematic::InverseKinematics(new_msg.roll, new_msg.pitch, new_msg.yaw);
             // Select desired state, using initial state
             new_position = Decision(joint_state, solutions);
 
-            for (uint8_t i = 0; i < ACTUATORS; i++)
-            {
-                actuators[i]->SetTargetPosition(new_position(i));
-            }
+            Actuator::SetTargetPosition(new_position.data());
         }
 
         // Sleep while drivers are moving robot
@@ -217,7 +207,7 @@ static void SerialInterface(void *arg)
 {
     OrientationMsg message = OrientationMsg_init_default;
     TickType_t previous_wake = 0;
-
+    
     (void)arg;
 
     while (true)
@@ -280,6 +270,7 @@ void setup()
 
     // Set actuator system pointer to use static methods
     Actuator::actuator_system = actuators;
+    Actuator::actuator_count = ACTUATORS;
 
     // Set Kinematic information
     Kinematic::SetDegreesOfFreedom(ACTUATORS);
@@ -293,11 +284,7 @@ void setup()
 
     if (status != pdPASS)
     {
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            delete actuators[i];
-        }
-
+        Actuator::Delete();
         logger.Error("Actuators did not initialize properly, check UART or power connection");
     }
 
@@ -329,11 +316,7 @@ void setup()
 
     if (status != pdPASS)
     {
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            delete actuators[i];
-        }
-        
+        Actuator::Delete();
         logger.Error("Creation problem");
     }
 
@@ -341,11 +324,7 @@ void setup()
 
     vTaskStartScheduler();
 
-    for (uint8_t i = 0; i < ACTUATORS; i++)
-    {
-        delete actuators[i];
-    }
-
+    Actuator::Delete();
     logger.Error("Insufficient RAM");
 }
 

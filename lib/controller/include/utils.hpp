@@ -104,6 +104,16 @@ namespace RobotTweezers
      * @return Eigen::Matrix3f Rotation matrix
      */
     Eigen::Matrix3f EulerXYZToRotation(const float x, const float y, const float z);
+
+    /**
+     * @brief Calculates the rotation matrix specified by XZY Euler Angles
+     *
+     * @param x X1 Euler angle
+     * @param y Y3 Euler angle
+     * @param z Z2 Euler angle
+     * @return Eigen::Matrix3f Rotation matrix
+     */
+    Eigen::Matrix3f EulerXZYToRotation(const float x, const float y, const float z);
 }
 
 #endif // _UTILS_HPP_
