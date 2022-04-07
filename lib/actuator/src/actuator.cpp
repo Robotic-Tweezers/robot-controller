@@ -74,7 +74,10 @@ float RobotTweezers::Actuator::GetPosition(void)
 
 void RobotTweezers::Actuator::SetTargetPosition(float position)
 {
-    long position_steps = RadiansToSteps(position, gear_ratio, microstep);
+    long position_steps;
+
+    position = (position > 0) ? fmin(position, motion_limits.max) : fmax(position, motion_limits.min);
+    position_steps = RadiansToSteps(position, gear_ratio, microstep);
     driver.moveTo(position_steps);
 }
 

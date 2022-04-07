@@ -9,7 +9,7 @@
  *
  */
 #define PWM_LOOP_RATE 100      // Stepper PWM rate in us
-#define INTERFACE_LOOP_RATE 100 // Serial loop rate in ms
+#define INTERFACE_LOOP_RATE 10 // Serial loop rate in ms
 
 /**
  * @brief Serial mappings
@@ -58,14 +58,14 @@
 #define THETA1_DIRECTION 4 // Direction pin for actuator 1
 #define THETA2_DIRECTION 6 // Direction pin for actuator 2
 
-#define THETA0_MOTION_MIN -PI
-#define THETA0_MOTION_MAX PI
-#define THETA1_MOTION_MIN -PI
-#define THETA1_MOTION_MAX PI
-#define THETA2_MOTION_MIN -PI
-#define THETA2_MOTION_MAX PI
+#define THETA0_MOTION_MIN (-PI * 3 / 4)
+#define THETA0_MOTION_MAX (PI * 3 / 4)
+#define THETA1_MOTION_MIN (-PI * 3 / 4)
+#define THETA1_MOTION_MAX (PI * 3 / 4)
+#define THETA2_MOTION_MIN (-PI * 3 / 4)
+#define THETA2_MOTION_MAX (PI * 3 / 4)
 
-#define THETA0_GEAR_RATIO 1
+#define THETA0_GEAR_RATIO -1
 #define THETA1_GEAR_RATIO 3
 #define THETA2_GEAR_RATIO 1
 
