@@ -66,11 +66,11 @@ float dh_table[3][3] = {
 };
 
 /**
- * @brief
+ * @brief Creates three actuator objects using settings defined in config.hpp
  *
- * @param serial
- * @return true
- * @return false
+ * @param serial    UART bus used by all TMC2209 drivers
+ * @return true     Successful initialization of all three actuators
+ * @return false    Unsuccessful init
  */
 static bool InitializeActuators(HardwareSerial *serial)
 {
@@ -87,9 +87,9 @@ static bool InitializeActuators(HardwareSerial *serial)
 /**
  * @brief Simple decision logic to determine which of two solutions will be used for trajectory
  *
- * @param position
- * @param solutions
- * @return Eigen::Vector3f
+ * @param position          Current position of the robot
+ * @param solutions         Two possible orientations to achieve desired end effector orientation
+ * @return Eigen::Vector3f  Chosen orientation
  */
 static Eigen::Vector3f Decision(Vector3f position, std::pair<Eigen::Vector3f, Eigen::Vector3f> &solutions)
 {
@@ -110,36 +110,34 @@ static Eigen::Vector3f Decision(Vector3f position, std::pair<Eigen::Vector3f, Ei
         }
     }
 
-    distance1 = sqrt((solutions.first - position).norm());
-    distance2 = sqrt((solutions.second - position).norm());
+    distance1 = (solutions.first - position).norm();
+    distance2 = (solutions.second - position).norm();
 
     return (distance1 < distance2) ? solutions.first : solutions.second;
 }
 
 /**
- * @brief
+ * @brief Runs all three steppers periodically
  *
- * @param arg
+ * @param arg Unused 
  */
 static void RunSteppers(void *arg)
 {
     TickType_t previous_wake = 0;
 
+    (void)arg;
+
     while (true)
     {
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            actuators[i]->driver.run();
-        }
-
+        Actuator::Run();
         vTaskDelayUntil(&previous_wake, TIME_IN_US(PWM_LOOP_RATE));
     }
 }
 
 /**
- * @brief
+ * @brief Calculates the joint positions needed to produce a desired end-effector orientation
  *
- * @param arg
+ * @param arg Unused 
  */
 static void ControlLoop(void *arg)
 {
@@ -147,24 +145,20 @@ static void ControlLoop(void *arg)
     Vector3f new_position;
     OrientationMsg new_msg;
 
+    (void)arg;
+
     while (true)
     {
         if (xQueueReceive(controller_queue, (void *)&new_msg, 0) == pdTRUE)
         {
-            for (uint8_t i = 0; i < ACTUATORS; i++)
-            {
-                joint_state(i) = actuators[i]->GetPosition();
-            }
+            Actuator::GetPosition(joint_state.data());
             
             // Find all possible solutions for achieving desired orientation
             solutions = Kinematic::InverseKinematics(new_msg.roll, new_msg.pitch, new_msg.yaw);
             // Select desired state, using initial state
             new_position = Decision(joint_state, solutions);
 
-            for (uint8_t i = 0; i < ACTUATORS; i++)
-            {
-                actuators[i]->SetTargetPosition(new_position(i));
-            }
+            Actuator::SetTargetPosition(new_position.data());
         }
 
         // Sleep while drivers are moving robot
@@ -172,6 +166,12 @@ static void ControlLoop(void *arg)
     }
 }
 
+/**
+ * @brief Power-on test to check if the ESP32 is connected
+ * 
+ * @return true     ESP32 is connected
+ * @return false    ESP32 is not connected
+ */
 static bool TestEsp32Connection(void)
 {
     UartConnection connection_msg, response;
@@ -198,10 +198,17 @@ static bool TestEsp32Connection(void)
     return status;
 }
 
+/**
+ * @brief Polling loop to check for new orientation commands
+ * 
+ * @param arg 
+ */
 static void SerialInterface(void *arg)
 {
     OrientationMsg message = OrientationMsg_init_default;
     TickType_t previous_wake = 0;
+    
+    (void)arg;
 
     while (true)
     {
@@ -247,8 +254,6 @@ void setup()
     Serial.begin(115200);
     logger.Log("Starting Robot, firmware version %d.%d", VERSION_MAJOR, VERSION_MINOR);
 
-    controller_queue = xQueueCreate(MESSAGE_QUEUE_DEPTH, sizeof(OrientationMsg));
-
     // Set pin and enable all actuators
     Actuator::SetEnablePin(ENABLE_PIN);
 
@@ -263,6 +268,10 @@ void setup()
 #endif // ESP_CONNECTION
     status &= InitializeActuators(&actuator_serial);
 
+    // Set actuator system pointer to use static methods
+    Actuator::actuator_system = actuators;
+    Actuator::actuator_count = ACTUATORS;
+
     // Set Kinematic information
     Kinematic::SetDegreesOfFreedom(ACTUATORS);
     Kinematic::SetBaseFrame(XRotation(PI));
@@ -275,11 +284,7 @@ void setup()
 
     if (status != pdPASS)
     {
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            delete actuators[i];
-        }
-
+        Actuator::Delete();
         logger.Error("Actuators did not initialize properly, check UART or power connection");
     }
 
@@ -301,6 +306,9 @@ void setup()
 
     logger.Log("Set controller inputs to initial states, spawning controller.");
 
+    // Start RTOS
+    controller_queue = xQueueCreate(MESSAGE_QUEUE_DEPTH, sizeof(OrientationMsg));
+
     // Rate Monotonic scheduling
     status &= xTaskCreate(RunSteppers, "Run Steppers", configMINIMAL_SECURE_STACK_SIZE, nullptr, 0, &run_stepper_handle);
     status &= xTaskCreate(SerialInterface, "Interface", 10 * configMINIMAL_SECURE_STACK_SIZE, nullptr, 1, &interface_handle);
@@ -308,11 +316,7 @@ void setup()
 
     if (status != pdPASS)
     {
-        for (uint8_t i = 0; i < ACTUATORS; i++)
-        {
-            delete actuators[i];
-        }
-        
+        Actuator::Delete();
         logger.Error("Creation problem");
     }
 
@@ -320,11 +324,7 @@ void setup()
 
     vTaskStartScheduler();
 
-    for (uint8_t i = 0; i < ACTUATORS; i++)
-    {
-        delete actuators[i];
-    }
-
+    Actuator::Delete();
     logger.Error("Insufficient RAM");
 }
 

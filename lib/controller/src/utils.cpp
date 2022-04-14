@@ -66,7 +66,16 @@ Eigen::Matrix3f RobotTweezers::EulerXYZToRotation(const float x, const float y, 
     Eigen::AngleAxisf y_rotation(y, Eigen::Vector3f::UnitY());
     Eigen::AngleAxisf z_rotation(z, Eigen::Vector3f::UnitZ());
     
-    return (x_rotation * y_rotation * z_rotation).toRotationMatrix();
+    return Eigen::Quaternionf(x_rotation * y_rotation * z_rotation).toRotationMatrix();
+}
+
+Eigen::Matrix3f RobotTweezers::EulerXZYToRotation(const float x, const float y, const float z)
+{
+    Eigen::AngleAxisf x_rotation(x, Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf y_rotation(y, Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf z_rotation(z, Eigen::Vector3f::UnitZ());
+    
+    return Eigen::Quaternionf(x_rotation * z_rotation * y_rotation).toRotationMatrix();
 }
 
 bool RobotTweezers::IsEqual(float a, float b, float precision)
@@ -91,8 +100,8 @@ float RobotTweezers::Kahan::Problem2(const Eigen::Vector3f &s_unit, Eigen::Vecto
 
     u_unit = u.normalized();
     v_unit = v.normalized();
-
-    if (std::abs(s_unit.dot(u_unit) - s_unit.dot(v_unit)) > precision)
+    
+    if (IsEqual(s_unit.dot(u_unit), s_unit.dot(v_unit), precision) == false)
     {
         // Solution not possible;
         return NaN;

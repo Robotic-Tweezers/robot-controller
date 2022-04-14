@@ -48,7 +48,7 @@ RobotTweezers::Coordinates RobotTweezers::Kinematic::DirectKinematics(const floa
 
 std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKinematics(const float roll, const float pitch, const float yaw)
 {
-    Eigen::Matrix3f frame = EulerXYZToRotation(roll, pitch, yaw);
+    Eigen::Matrix3f frame = EulerXZYToRotation(roll, pitch, yaw);
     RobotTweezers::Coordinates coordinates = Coordinates(frame, Eigen::Vector3f());
     return RobotTweezers::Kinematic::InverseKinematics(coordinates);
 }
@@ -88,10 +88,11 @@ std::pair<Eigen::Vector3f, Eigen::Vector3f> RobotTweezers::Kinematic::InverseKin
 
     // Will return two possible solutions for theta 1 and 3
     theta13 = Kahan::Problem3(k_unit_base, k_unit_end, u, v);
+    theta13.second = -theta13.second;
 
     for (int i = 0; i < 2; i++)
     {
-        Eigen::Matrix3f frame2 = end_effector.frame * Rotation(theta13.second(i), Eigen::Vector3f(0, 0, 1));
+        Eigen::Matrix3f frame2 = end_effector.frame * Rotation(-theta13.second(i), Eigen::Vector3f(0, 0, 1));
         Eigen::Matrix3f frame1 = base_frame * Rotation(theta13.first(i), Eigen::Vector3f(0, 0, 1)) * Rotation(psi, Eigen::Vector3f(1, 0, 0));
 
         Eigen::Vector3f i_unit1 = frame1 * Eigen::Vector3f(1, 0, 0);

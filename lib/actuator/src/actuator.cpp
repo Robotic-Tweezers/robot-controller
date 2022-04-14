@@ -8,6 +8,10 @@ uint8_t RobotTweezers::Actuator::enable = 10;
 
 RobotTweezers::Actuator::Actuator() : driver(), uart(nullptr, RSENSE, 0b00) {}
 
+RobotTweezers::Actuator **RobotTweezers::Actuator::actuator_system = nullptr;
+
+uint8_t RobotTweezers::Actuator::actuator_count = 3;
+
 RobotTweezers::Actuator::Actuator(HardwareSerial *serial, ActuatorSettings &settings)
     : driver(AccelStepper::DRIVER, settings.step, settings.direction), uart(serial, RSENSE, settings.uart_address)
 {
@@ -44,8 +48,8 @@ bool RobotTweezers::Actuator::Initialize(void)
 
     // Initialize stepper control
     driver.setCurrentPosition(0);
-    driver.setMaxSpeed(RadiansToSteps(10, gear_ratio, microstep));
-    driver.setAcceleration(RadiansToSteps(5, gear_ratio, microstep));
+    driver.setMaxSpeed(RadiansToSteps(6, gear_ratio, microstep));
+    driver.setAcceleration(RadiansToSteps(3, gear_ratio, microstep));
 
     return true;
 }
@@ -70,7 +74,10 @@ float RobotTweezers::Actuator::GetPosition(void)
 
 void RobotTweezers::Actuator::SetTargetPosition(float position)
 {
-    long position_steps = RadiansToSteps(position, gear_ratio, microstep);
+    long position_steps;
+
+    position = (position > 0) ? fmin(position, motion_limits.max) : fmax(position, motion_limits.min);
+    position_steps = RadiansToSteps(position, gear_ratio, microstep);
     driver.moveTo(position_steps);
 }
 
@@ -134,4 +141,44 @@ void RobotTweezers::Actuator::Enable(void)
 void RobotTweezers::Actuator::Disable(void)
 {
     return digitalWrite(enable, HIGH);
+}
+
+void RobotTweezers::Actuator::Delete(void)
+{
+    for (uint8_t i = 0; i < actuator_count; i++)
+    {
+        delete actuator_system[i];
+    }
+}
+
+void RobotTweezers::Actuator::SetVelocity(const float *velocity)
+{
+    for (uint8_t i = 0; i < actuator_count; i++)
+    {
+        actuator_system[i]->SetVelocity(velocity[i]);
+    }
+}
+
+void RobotTweezers::Actuator::GetPosition(float *position)
+{
+    for (uint8_t i = 0; i < actuator_count; i++)
+    {
+        position[i] = actuator_system[i]->GetPosition();
+    }
+}
+
+void RobotTweezers::Actuator::SetTargetPosition(float *position)
+{
+    for (uint8_t i = 0; i < actuator_count; i++)
+    {
+        actuator_system[i]->SetTargetPosition(position[i]);
+    }
+}
+
+void RobotTweezers::Actuator::Run(void)
+{
+    for (uint8_t i = 0; i < actuator_count; i++)
+    {
+        actuator_system[i]->driver.run();
+    }
 }

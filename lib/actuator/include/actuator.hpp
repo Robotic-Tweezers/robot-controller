@@ -91,6 +91,12 @@ namespace RobotTweezers
         /// @brief Provides a UART interface to control stepper driver features
         TMC2209Stepper uart;
 
+        /// @brief Pointer to an array of actuator pointers used for coordinated motion
+        static Actuator **actuator_system;
+
+        /// @brief Number of actuators in the system
+        static uint8_t actuator_count;
+
         /**
          * @brief Initialize TMC2209 UART registers
          *
@@ -178,6 +184,43 @@ namespace RobotTweezers
          *
          */
         static void Disable(void);
+
+        /**
+         * @brief Delete all Actuators
+         * 
+         */
+        static void Delete(void);
+
+        /**
+         * @brief Set velocity of all actuators
+         * 
+         * @param velocity  Arary containing Actuator velocities
+         */
+        static void SetVelocity(const float *velocity);
+
+        /**
+         * @brief Get the Position of all Actuators
+         * 
+         * @param actuators         Array of Actuator pointers 
+         * @param size              Number of actuators
+         * @return Eigen::Vector3f  Position of each Actuator
+         */
+        static void GetPosition(float *position);
+
+        /**
+         * @brief Set the Target Position for each actuator
+         * 
+         * @param position          Float array of positions
+         */
+        static void SetTargetPosition(float *position);
+
+        /**
+         * @brief Run speed driver for all steppers
+         *
+         * @param actuators Array of actuators containing stepper objects 
+         * @param size      Number of steppers
+         */
+        static void Run(void);
     };
 }
 
